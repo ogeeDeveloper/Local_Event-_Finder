@@ -167,7 +167,11 @@ fun SocialLoginDivider(
     ) {
         Modifier.weight(1f)
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-        HorizontalDivider(modifier, thickness, color)
+        HorizontalDivider(
+            modifier = Modifier.weight(1f),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+        )
 
         Text(
             text = "Or continue using",
@@ -176,8 +180,9 @@ fun SocialLoginDivider(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        Divider(
+        HorizontalDivider(
             modifier = Modifier.weight(1f),
+            thickness = 1.dp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
         )
     }
@@ -204,7 +209,7 @@ fun SocialLoginButtons(
         // Facebook login button
         SocialButton(
             onClick = { /* Handle Facebook login */ },
-            iconResId = R.drawable.ic_facebook,
+            iconResId = R.drawable.facebook,
             contentDescription = "Continue with Facebook"
         )
     }
