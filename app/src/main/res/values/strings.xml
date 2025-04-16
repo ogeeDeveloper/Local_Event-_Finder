@@ -1,3 +1,25 @@
 <resources>
     <string name="app_name">local-event-finder-frontend</string>
+
+    // Root destinations strings
+    <string name="welcome_route">/welcome</string>
+    <string name="login_route">/login</string>
+
+    // Nested graphs strings
+    <string name="onboarding_route">/onboarding</string>
+    <string name="main_route">/main</string>
+
+    // Onboarding routes strings
+    <string name="create_account_route">/create-account</string>
+    <string name="verify_phone_route">/verify-phone</string>
+    <string name="verify_email_route">/verify-email</string>
+    <string name="interests_route">/interests</string>
+    <string name="location_permission_route">/location-permission</string>
+    <string name="notification_permission_route">/notification-permission</string>
+
+    // Main application routes strings
+    <string name="home_route">/home</string>
+    <string name="search_route">/search</string>
+    <string name="events_route">/events</string>
+    <string name="profile_route">/profile</string>
 </resources>
