@@ -1,8 +1,24 @@
 package com.ogeedeveloper.local_event_finder_frontend.di
 
+import android.content.Context
+import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
+import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
+import com.ogeedeveloper.local_event_finder_frontend.data.network.UserApi
+import com.ogeedeveloper.local_event_finder_frontend.data.repository.AuthRepositoryImpl
+import com.ogeedeveloper.local_event_finder_frontend.data.repository.EventRepositoryImpl
+import com.ogeedeveloper.local_event_finder_frontend.data.repository.UserRepositoryImpl
+import com.ogeedeveloper.local_event_finder_frontend.data.storage.AuthLocalDataSource
+import com.ogeedeveloper.local_event_finder_frontend.data.storage.UserPreferences
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.AuthRepository
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.UserRepository
+import com.ogeedeveloper.local_event_finder_frontend.util.permissions.PermissionManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -15,13 +31,86 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthRepository(): AuthRepository {
-        return AuthRepositoryImpl()
+    fun provideGson(): Gson {
+        return Gson()
     }
 
     @Provides
     @Singleton
-    fun provideUserRepository(): UserRepository {
-        return UserRepositoryImpl()
+    fun provideSharedPreferences(
+        @ApplicationContext context: Context
+    ): SharedPreferences {
+        return context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthLocalDataSource(
+        sharedPreferences: SharedPreferences,
+        gson: Gson
+    ): AuthLocalDataSource {
+        return AuthLocalDataSource(sharedPreferences, gson)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserPreferences(
+        @ApplicationContext context: Context,
+        gson: Gson
+    ): UserPreferences {
+        return UserPreferences(context, gson)
+    }
+
+    @Provides
+    @Singleton
+    fun providePermissionManager(
+        @ApplicationContext context: Context
+    ): PermissionManager {
+        return PermissionManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthApi(): AuthApi {
+        return AuthApi()
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserApi(): UserApi {
+        return UserApi()
+    }
+
+    @Provides
+    @Singleton
+    fun provideEventApi(): EventApi {
+        return EventApi()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        authApi: AuthApi,
+        authLocalDataSource: AuthLocalDataSource,
+        sharedPreferences: SharedPreferences
+    ): AuthRepository {
+        return AuthRepositoryImpl(authApi, authLocalDataSource, sharedPreferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(
+        userApi: UserApi,
+        userPreferences: UserPreferences
+    ): UserRepository {
+        return UserRepositoryImpl(userApi, userPreferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideEventRepository(
+        eventApi: EventApi
+    ): EventRepository {
+        return EventRepositoryImpl(eventApi)
     }
 }
