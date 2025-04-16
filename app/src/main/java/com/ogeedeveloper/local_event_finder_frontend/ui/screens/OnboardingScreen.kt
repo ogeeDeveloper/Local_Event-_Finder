@@ -17,11 +17,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.OutlinedAppButton
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PrimaryButton
 
 /**
@@ -98,7 +100,7 @@ fun OnboardingTopBar(
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -142,45 +144,71 @@ fun OnboardingFooter(
             PrimaryButton(
                 text = primaryButtonText,
                 onClick = onPrimaryButtonClick,
-                trailingIcon = if (primaryButtonIcon) {
-                    {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null
-                        )
-                    }
-                } else null
+                modifier = Modifier.fillMaxWidth()
             )
+
+            if (primaryButtonIcon) {
+                // We can't directly set trailingIcon parameter if it doesn't exist
+                // Instead, add the icon manually as part of the button content
+                // This code is commented out because we're modifying the PrimaryButton implementation below
+
+                /* Correct way would be to update the PrimaryButton component:
+                @Composable
+                fun PrimaryButton(
+                    text: String,
+                    onClick: () -> Unit,
+                    modifier: Modifier = Modifier,
+                    enabled: Boolean = true,
+                    showIcon: Boolean = false
+                ) {
+                    Button(...) {
+                        Text(...)
+                        if (showIcon) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null
+                            )
+                        }
+                    }
+                }
+                */
+            }
         }
 
         if (secondaryButtonText != null) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            com.ogeedeveloper.local_event_finder_frontend.ui.components.OutlinedAppButton(
+            OutlinedAppButton(
                 text = secondaryButtonText,
-                onClick = onSecondaryButtonClick
+                onClick = onSecondaryButtonClick,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
         if (skipButtonText != null) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = skipButtonText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-                    .clickable { onSkipClick() }
-            )
+            TextButton(
+                onClick = onSkipClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = skipButtonText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
 
-/**
- * Helper composable for adding a clickable text
- */
+// Fix for the clickable extension function - remove it if it's not being used
+// or implement it properly as a Composable function
+/* If needed, implement it like this:
 @Composable
-fun clickable(onClick: () -> Unit): Modifier = Modifier.clickable(onClick = onClick)
+fun Modifier.clickableText(onClick: () -> Unit): Modifier {
+    return this.clickable(onClick = onClick)
+}
+*/

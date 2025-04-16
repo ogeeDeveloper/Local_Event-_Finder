@@ -162,12 +162,12 @@ fun AppNavHost(
         startDestination = startDestination
     ) {
         // Welcome and login screens (outside of any nested graph)
-        composable(route = AppDestinations.WELCOME_ROUTE) {
-            WelcomeScreen(
-                onGetStartedClick = { navigationActions.navigateToOnboarding() },
-                onSignInClick = { navigationActions.navigateToLogin() }
-            )
-        }
+//        composable(route = AppDestinations.WELCOME_ROUTE) {
+//            WelcomeScreen(
+//                onGetStartedClick = { navigationActions.navigateToOnboarding() },
+//                onSignInClick = { navigationActions.navigateToLogin() }
+//            )
+//        }
 
         composable(route = AppDestinations.LOGIN_ROUTE) {
             LoginScreen(
@@ -227,19 +227,19 @@ fun AppNavHost(
         }
 
         // Main app navigation graph (would be implemented similarly)
-        navigation(
-            startDestination = AppDestinations.HOME_ROUTE,
-            route = AppDestinations.MAIN_ROUTE
-        ) {
-            composable(route = AppDestinations.HOME_ROUTE) {
-                HomeScreen(
-                    onNavigateToSearch = { navigationActions.navigateToSearch() },
-                    onNavigateToEvents = { navigationActions.navigateToEvents() },
-                    onNavigateToProfile = { navigationActions.navigateToProfile() }
-                )
-            }
-
-            // Other main app screens would be added here
-        }
+//        navigation(
+//            startDestination = AppDestinations.HOME_ROUTE,
+//            route = AppDestinations.MAIN_ROUTE
+//        ) {
+//            composable(route = AppDestinations.HOME_ROUTE) {
+//                HomeScreen(
+//                    onNavigateToSearch = { navigationActions.navigateToSearch() },
+//                    onNavigateToEvents = { navigationActions.navigateToEvents() },
+//                    onNavigateToProfile = { navigationActions.navigateToProfile() }
+//                )
+//            }
+//
+//            // Other main app screens would be added here
+//        }
     }
 }
