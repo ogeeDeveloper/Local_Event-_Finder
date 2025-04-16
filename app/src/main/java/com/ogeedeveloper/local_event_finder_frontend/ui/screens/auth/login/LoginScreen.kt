@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -72,7 +73,7 @@ fun LoginScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
@@ -110,13 +111,12 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password field
+            // Password field - Removed the leadingIcon parameter since it's not supported
             PasswordTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = "Password",
-                placeholder = "Placeholder",
-                leadingIcon = Icons.Default.Lock
+                placeholder = "Placeholder"
             )
 
             Spacer(modifier = Modifier.height(8.dp))

@@ -59,7 +59,8 @@ fun AppTextField(
     singleLine: Boolean = true,
     maxLines: Int = 1,
     enabled: Boolean = true,
-    readOnly: Boolean = false
+    readOnly: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier = modifier) {
         if (label != null) {
@@ -115,6 +116,7 @@ fun AppTextField(
             maxLines = maxLines,
             enabled = enabled,
             readOnly = readOnly,
+            visualTransformation = visualTransformation,  // Use the parameter
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
@@ -147,6 +149,9 @@ fun AppTextField(
     }
 }
 
+/**
+ * Password input field with visibility toggle
+ */
 @Composable
 fun PasswordTextField(
     value: String,
@@ -177,9 +182,10 @@ fun PasswordTextField(
         ),
         keyboardActions = keyboardActions,
         enabled = enabled,
-//        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
+        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation()
     )
 }
+
 
 @Composable
 fun SearchTextField(
