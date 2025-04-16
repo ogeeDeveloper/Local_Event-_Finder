@@ -1,5 +1,6 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
+import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import kotlinx.coroutines.delay

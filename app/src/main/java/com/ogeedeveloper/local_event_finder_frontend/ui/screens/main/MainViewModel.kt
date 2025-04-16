@@ -43,26 +43,72 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MainAppUiState())
     val uiState: StateFlow<MainAppUiState> = _uiState.asStateFlow()
 
-    // Combining multiple repository flows
-    val combinedState = combine(
-        authRepository.getCurrentUser(),
-        eventRepository.getEventsByCategory("featured"),
-        eventRepository.getEventsByLocation(0.0, 0.0, 10) // Default location
-    ) { user, featuredEvents, nearbyEvents ->
-        MainAppUiState(
-            currentUser = user,
-            featuredEvents = featuredEvents,
-            nearbyEvents = nearbyEvents
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = MainAppUiState(isLoading = true)
-    )
-
     init {
         // Load initial data
         loadData()
+        // Set up user data flow
+        observeUserData()
+        // Load featured and nearby events
+        loadFeaturedEvents()
+        loadNearbyEvents()
+    }
+
+    private fun observeUserData() {
+        viewModelScope.launch {
+            authRepository.getCurrentUser().collect { user ->
+                _uiState.value = _uiState.value.copy(currentUser = user)
+            }
+        }
+    }
+
+    private fun loadFeaturedEvents() {
+        viewModelScope.launch {
+            try {
+                eventRepository.getEventsByCategory("featured").collect { events ->
+                    // Convert domain.repository.Event to domain.model.Event
+                    val modelEvents = events.map { repoEvent ->
+                        Event(
+                            id = repoEvent.id,
+                            title = repoEvent.title,
+                            description = repoEvent.description,
+                            startDate = java.util.Date(), // Use appropriate date conversion
+                            price = repoEvent.price
+                            // Map other properties as needed
+                        )
+                    }
+                    _uiState.value = _uiState.value.copy(featuredEvents = modelEvents)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Error loading featured events"
+                )
+            }
+        }
+    }
+
+    private fun loadNearbyEvents() {
+        viewModelScope.launch {
+            try {
+                eventRepository.getEventsByLocation(0.0, 0.0, 10).collect { events ->
+                    // Convert domain.repository.Event to domain.model.Event
+                    val modelEvents = events.map { repoEvent ->
+                        Event(
+                            id = repoEvent.id,
+                            title = repoEvent.title,
+                            description = repoEvent.description,
+                            startDate = java.util.Date(), // Use appropriate date conversion
+                            price = repoEvent.price
+                            // Map other properties as needed
+                        )
+                    }
+                    _uiState.value = _uiState.value.copy(nearbyEvents = modelEvents)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = e.message ?: "Error loading nearby events"
+                )
+            }
+        }
     }
 
     fun loadData() {
@@ -72,8 +118,19 @@ class MainViewModel @Inject constructor(
             try {
                 // Load saved events
                 eventRepository.getSavedEvents().collect { events ->
+                    // Convert domain.repository.Event to domain.model.Event
+                    val modelEvents = events.map { repoEvent ->
+                        Event(
+                            id = repoEvent.id,
+                            title = repoEvent.title,
+                            description = repoEvent.description,
+                            startDate = java.util.Date(), // Use appropriate date conversion
+                            price = repoEvent.price
+                            // Map other properties as needed
+                        )
+                    }
                     _uiState.value = _uiState.value.copy(
-                        savedEvents = events,
+                        savedEvents = modelEvents,
                         isLoading = false
                     )
                 }
@@ -91,8 +148,19 @@ class MainViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             eventRepository.searchEvents(query).collect { events ->
+                // Convert domain.repository.Event to domain.model.Event
+                val modelEvents = events.map { repoEvent ->
+                    Event(
+                        id = repoEvent.id,
+                        title = repoEvent.title,
+                        description = repoEvent.description,
+                        startDate = java.util.Date(), // Use appropriate date conversion
+                        price = repoEvent.price
+                        // Map other properties as needed
+                    )
+                }
                 _uiState.value = _uiState.value.copy(
-                    recommendedEvents = events,
+                    recommendedEvents = modelEvents,
                     isLoading = false
                 )
             }
@@ -106,8 +174,19 @@ class MainViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             eventRepository.getEventsByCategory(category).collect { events ->
+                // Convert domain.repository.Event to domain.model.Event
+                val modelEvents = events.map { repoEvent ->
+                    Event(
+                        id = repoEvent.id,
+                        title = repoEvent.title,
+                        description = repoEvent.description,
+                        startDate = java.util.Date(), // Use appropriate date conversion
+                        price = repoEvent.price
+                        // Map other properties as needed
+                    )
+                }
                 _uiState.value = _uiState.value.copy(
-                    recommendedEvents = events,
+                    recommendedEvents = modelEvents,
                     isLoading = false
                 )
             }
@@ -120,9 +199,7 @@ class MainViewModel @Inject constructor(
 
             // If successful, refresh saved events
             if (result.isSuccess) {
-                eventRepository.getSavedEvents().collect { events ->
-                    _uiState.value = _uiState.value.copy(savedEvents = events)
-                }
+                loadData() // Reuse existing function to reload saved events
             }
         }
     }
@@ -133,7 +210,7 @@ class MainViewModel @Inject constructor(
 
     fun signOut() {
         viewModelScope.launch {
-            val result = authRepository.signOut()
+            authRepository.signOut()
             // Navigation handled by UI
         }
     }

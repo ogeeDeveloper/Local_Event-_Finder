@@ -1,7 +1,13 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
+import com.ogeedeveloper.local_event_finder_frontend.data.network.UserApi
+import com.ogeedeveloper.local_event_finder_frontend.data.storage.UserPreferences
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.NotificationPreferences
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.User
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.UserRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -105,7 +111,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getLocationPreference(): Flow<Boolean> {
         return userPreferences.getUserFlow().map {
-            it?.locationPreferences?.useLocationServices ?: false
+            it?.locationPreferences?.useLocationServices == true
         }
     }
 }
