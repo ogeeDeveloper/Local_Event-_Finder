@@ -1,5 +1,6 @@
 package com.ogeedeveloper.local_event_finder_frontend.domain.repository
 
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.User
 import kotlinx.coroutines.flow.Flow
 
@@ -41,10 +42,10 @@ interface UserRepository {
  * Interface for event operations
  */
 interface EventRepository {
-    suspend fun getEventsByCategory(category: String): Flow<List<Event>>
-    suspend fun getEventsByLocation(lat: Double, lng: Double, radius: Int): Flow<List<Event>>
-    suspend fun getEventDetails(eventId: String): Flow<Event?>
-    suspend fun searchEvents(query: String): Flow<List<Event>>
+    suspend fun getEventsByCategory(category: String): Flow<List<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event>>
+    suspend fun getEventsByLocation(lat: Double, lng: Double, radius: Int): Flow<List<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event>>
+    suspend fun getEventDetails(eventId: String): Flow<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event?>
+    suspend fun searchEvents(query: String): Flow<List<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event>>
     suspend fun saveEvent(eventId: String): Result<Boolean>
     suspend fun getSavedEvents(): Flow<List<Event>>
 }

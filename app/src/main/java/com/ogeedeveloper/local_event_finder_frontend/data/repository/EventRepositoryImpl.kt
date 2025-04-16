@@ -2,10 +2,13 @@ package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,40 +26,74 @@ class EventRepositoryImpl @Inject constructor(
             id = "1",
             title = "Shawn Mendes The Virtual Tour in Germany 2021",
             description = "Join Shawn Mendes for an exclusive virtual concert experience",
-            date = "Dec 2, 2021",
-            time = "10:00 - 12:00",
-            location = "Virtual Event",
+            startDate = Date(),
+            endDate = Date(),
+            location = null,
+            isOnline = true,
+            joinUrl = "https://example.com/join",
+            imageUrl = null,
             price = 100.0,
-            category = "Music"
+            originalPrice = 150.0,
+            currency = "USD",
+            category = "Music",
+            tags = listOf("Concert", "Music", "Virtual")
         ),
         Event(
             id = "2",
             title = "Business Leadership Conference",
             description = "Learn from top industry leaders",
-            date = "Dec 15, 2021",
-            time = "9:00 - 17:00",
-            location = "Convention Center",
+            startDate = Date(),
+            endDate = Date(),
+            location = Location(
+                id = UUID.randomUUID().toString(),
+                name = "Convention Center",
+                address = "123 Main St",
+                latitude = 40.7128,
+                longitude = -74.0060
+            ),
+            isOnline = false,
+            joinUrl = null,
+            imageUrl = null,
             price = 250.0,
-            category = "Business"
+            originalPrice = null,
+            currency = "USD",
+            category = "Business",
+            tags = listOf("Conference", "Business", "Leadership")
         ),
         Event(
             id = "3",
             title = "Food & Wine Festival",
             description = "Taste culinary delights from award-winning chefs",
-            date = "Dec 10, 2021",
-            time = "18:00 - 22:00",
-            location = "Downtown Park",
+            startDate = Date(),
+            endDate = Date(),
+            location = Location(
+                id = UUID.randomUUID().toString(),
+                name = "Downtown Park",
+                address = "456 Park Ave",
+                latitude = 40.7580,
+                longitude = -73.9855
+            ),
+            isOnline = false,
+            joinUrl = null,
+            imageUrl = null,
             price = 75.0,
-            category = "Food"
+            originalPrice = null,
+            currency = "USD",
+            category = "Food",
+            tags = listOf("Festival", "Food", "Wine")
         )
     )
 
     override suspend fun getEventsByCategory(category: String): Flow<List<Event>> {
         return flow {
             delay(800) // Simulate network delay
-            emit(mockEvents.filter {
-                it.category.equals(category, ignoreCase = true)
-            })
+            if (category.equals("All", ignoreCase = true)) {
+                emit(mockEvents)
+            } else {
+                emit(mockEvents.filter {
+                    it.category.equals(category, ignoreCase = true)
+                })
+            }
         }
     }
 
