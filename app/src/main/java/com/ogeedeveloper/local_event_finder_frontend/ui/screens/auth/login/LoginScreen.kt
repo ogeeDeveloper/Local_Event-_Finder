@@ -14,29 +14,37 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PasswordTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PrimaryButton
@@ -44,18 +52,34 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup.Soci
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup.SocialLoginDivider
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.SecondaryLight
-
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     onBackClick: () -> Unit,
     onLoginSuccess: () -> Unit,
     onSignUpClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: LoginViewModel = hiltViewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+    val focusManager = LocalFocusManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading && uiState.errorMessage == null && uiState.email.isNotEmpty()) {
+            onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { errorMessage ->
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(errorMessage)
+            }
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -67,7 +91,6 @@ fun LoginScreen(
                 .padding(24.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Back button
             IconButton(
                 onClick = onBackClick,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -79,7 +102,6 @@ fun LoginScreen(
                 )
             }
 
-            // Login title
             Text(
                 text = "Login to your account",
                 style = MaterialTheme.typography.headlineMedium,
@@ -96,13 +118,13 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Email field
             AppTextField(
-                value = email,
-                onValueChange = { email = it },
+                value = uiState.email,
+                onValueChange = { viewModel.onEmailChanged(it) },
                 label = "Email Address",
-                placeholder = "Placeholder",
+                placeholder = "Enter your email",
                 leadingIcon = Icons.Default.Email,
+                isError = uiState.isEmailError,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -111,30 +133,30 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Password field - Removed the leadingIcon parameter since it's not supported
             PasswordTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = uiState.password,
+                onValueChange = { viewModel.onPasswordChanged(it) },
                 label = "Password",
-                placeholder = "Placeholder"
+                placeholder = "Enter your password",
+                isError = uiState.isPasswordError,
+//                isPasswordVisible = uiState.isPasswordVisible,
+//                onTogglePasswordVisibility = { viewModel.togglePasswordVisibility() }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Remember me and forgot password
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Remember me checkbox
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { rememberMe = !rememberMe }
+                    modifier = Modifier.clickable { viewModel.onRememberMeChanged(!uiState.rememberMe) }
                 ) {
                     Checkbox(
-                        checked = rememberMe,
-                        onCheckedChange = { rememberMe = it }
+                        checked = uiState.rememberMe,
+                        onCheckedChange = { viewModel.onRememberMeChanged(it) }
                     )
 
                     Text(
@@ -144,7 +166,6 @@ fun LoginScreen(
                     )
                 }
 
-                // Forgot password link
                 TextButton(onClick = { /* Handle forgot password */ }) {
                     Text(
                         text = "forgot password?",
@@ -156,26 +177,33 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Login button
             PrimaryButton(
-                text = "Login",
-                onClick = onLoginSuccess,
-                modifier = Modifier.fillMaxWidth()
+                text = if (uiState.isLoading) "Logging in..." else "Login",
+                onClick = { 
+                    focusManager.clearFocus()
+                    viewModel.login() 
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isLoading && uiState.email.isNotEmpty() && uiState.password.isNotEmpty()
             )
+            
+            if (uiState.isLoading) {
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Social login divider
             SocialLoginDivider()
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Social login buttons
             SocialLoginButtons()
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Don't have an account? Sign Up
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
@@ -195,6 +223,11 @@ fun LoginScreen(
                     )
                 }
             }
+            
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
         }
     }
 }

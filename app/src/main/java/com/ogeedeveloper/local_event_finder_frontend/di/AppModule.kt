@@ -3,7 +3,9 @@ package com.ogeedeveloper.local_event_finder_frontend.di
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
+import com.ogeedeveloper.local_event_finder_frontend.data.network.ApiConfig
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
+import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthService
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.data.network.UserApi
 import com.ogeedeveloper.local_event_finder_frontend.data.repository.AuthRepositoryImpl
@@ -20,6 +22,11 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 /**
@@ -71,20 +78,57 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthApi(): AuthApi {
-        return AuthApi()
+    fun provideApiConfig(): ApiConfig {
+        return ApiConfig()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient, apiConfig: ApiConfig): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(apiConfig.getBaseUrl())
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideAuthService(retrofit: Retrofit): AuthService {
+        return retrofit.create(AuthService::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideUserApi(): UserApi {
-        return UserApi()
+    fun provideAuthApi(authService: AuthService, apiConfig: ApiConfig): AuthApi {
+        return AuthApi(authService, apiConfig)
     }
 
     @Provides
     @Singleton
-    fun provideEventApi(): EventApi {
-        return EventApi()
+    fun provideUserApi(apiConfig: ApiConfig): UserApi {
+        return UserApi(apiConfig)
+    }
+
+    @Provides
+    @Singleton
+    fun provideEventApi(apiConfig: ApiConfig): EventApi {
+        return EventApi(apiConfig)
     }
 
     @Provides

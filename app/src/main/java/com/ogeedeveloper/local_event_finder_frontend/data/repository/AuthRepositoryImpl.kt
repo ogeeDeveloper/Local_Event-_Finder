@@ -19,7 +19,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Implementation of AuthRepository with mock data (would be replaced with real API calls)
+ * Implementation of AuthRepository that handles authentication operations
  */
 @Singleton
 class AuthRepositoryImpl @Inject constructor(
@@ -44,37 +44,30 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun signIn(email: String, password: String): Result<User> {
         return try {
-            // In a real app, this would call the API
-            delay(1000) // Simulate network delay
-
-            // Mock successful login
-            if (email.contains("@") && password.length >= 6) {
-                val user = User(
-                    id = UUID.randomUUID().toString(),
-                    fullName = "John Doe",
-                    email = email,
-                    isEmailVerified = true,
-                    phoneNumber = "+1234567890",
-                    isPhoneVerified = true
-                )
-                _currentUser.value = user
-                _authState.value = AuthState.AUTHENTICATED
-
-                // Save to local storage
-                authLocalDataSource.saveUser(user)
-                authLocalDataSource.saveAuthSession(
-                    AuthSession(
-                        userId = user.id,
-                        accessToken = "mock_token_${user.id}",
-                        refreshToken = "mock_refresh_${user.id}",
-                        expiresAt = Date(System.currentTimeMillis() + 3600000)
-                    )
-                )
-
-                Result.success(user)
-            } else {
-                Result.failure(Exception("Invalid credentials"))
-            }
+            // Call the API to login
+            val response = authApi.login(email, password)
+            
+            // Extract user and token from response
+            val user = response.user
+            val token = response.token
+            
+            // Save user to local state
+            _currentUser.value = user
+            _authState.value = AuthState.AUTHENTICATED
+            
+            // Save to local storage
+            authLocalDataSource.saveUser(user)
+            
+            // Create and save auth session with token
+            val authSession = AuthSession(
+                userId = user.id,
+                accessToken = token,
+                refreshToken = "", // Not provided in the response
+                expiresAt = Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000) // Assume 24 hours expiry
+            )
+            authLocalDataSource.saveAuthSession(authSession)
+            
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
