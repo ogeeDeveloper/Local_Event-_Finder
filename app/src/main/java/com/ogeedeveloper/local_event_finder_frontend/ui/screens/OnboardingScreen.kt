@@ -100,7 +100,7 @@ fun OnboardingTopBar(
                 modifier = Modifier.padding(bottom = 8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
                     tint = MaterialTheme.colorScheme.onSurface
                 )

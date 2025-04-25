@@ -75,10 +75,13 @@ class VerifyPhoneViewModel @Inject constructor(
         _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val result = authRepository.verifyPhone(currentState.verificationCode)
+            val result = authRepository.verifyPhoneNumber(
+                phoneNumber = currentState.phoneNumber,
+                code = currentState.verificationCode
+            )
 
             result.fold(
-                onSuccess = {
+                onSuccess = { message ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         verificationStatus = VerificationStatus.VERIFIED,
@@ -98,18 +101,18 @@ class VerifyPhoneViewModel @Inject constructor(
 
     fun sendVerificationCode() {
         val currentState = _uiState.value
-
+        
         _uiState.value = currentState.copy(
             isLoading = true,
             errorMessage = null,
             verificationStatus = VerificationStatus.PENDING
         )
-
+        
         viewModelScope.launch {
-            val result = authRepository.sendPhoneVerification(currentState.phoneNumber)
-
+            val result = authRepository.sendPhoneVerificationCode(currentState.phoneNumber)
+            
             result.fold(
-                onSuccess = {
+                onSuccess = { message ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         errorMessage = null
@@ -125,15 +128,16 @@ class VerifyPhoneViewModel @Inject constructor(
             )
         }
     }
-
+    
     private fun startResendCountdown() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(resendCountdown = 30)
-
-            for (i in 30 downTo 0) {
-                _uiState.value = _uiState.value.copy(resendCountdown = i)
-                delay(1000) // Wait 1 second
+            var countdown = 30
+            while (countdown > 0) {
+                _uiState.value = _uiState.value.copy(resendCountdown = countdown)
+                delay(1000)
+                countdown--
             }
+            _uiState.value = _uiState.value.copy(resendCountdown = 0)
         }
     }
 }

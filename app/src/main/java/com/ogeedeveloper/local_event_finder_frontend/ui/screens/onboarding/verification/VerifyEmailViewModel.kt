@@ -18,7 +18,8 @@ data class VerifyEmailUiState(
     val email: String = "",
     val verificationStatus: VerificationStatus = VerificationStatus.NOT_STARTED,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val verificationCode: String = ""
 )
 
 /**
@@ -55,10 +56,10 @@ class VerifyEmailViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            val result = authRepository.sendEmailVerification()
+            val result = authRepository.sendEmailVerificationCode(currentState.email)
 
             result.fold(
-                onSuccess = {
+                onSuccess = { message ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         errorMessage = null
@@ -68,6 +69,47 @@ class VerifyEmailViewModel @Inject constructor(
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         errorMessage = exception.message ?: "Failed to send verification email"
+                    )
+                }
+            )
+        }
+    }
+    
+    fun onVerificationCodeChanged(code: String) {
+        _uiState.value = _uiState.value.copy(verificationCode = code)
+    }
+    
+    fun verifyEmail() {
+        val currentState = _uiState.value
+        
+        if (currentState.verificationCode.isEmpty()) {
+            _uiState.value = currentState.copy(
+                errorMessage = "Please enter the verification code"
+            )
+            return
+        }
+        
+        _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+        
+        viewModelScope.launch {
+            val result = authRepository.verifyEmail(
+                email = currentState.email,
+                code = currentState.verificationCode
+            )
+            
+            result.fold(
+                onSuccess = { message ->
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        verificationStatus = VerificationStatus.VERIFIED,
+                        errorMessage = null
+                    )
+                },
+                onFailure = { exception ->
+                    _uiState.value = currentState.copy(
+                        isLoading = false,
+                        verificationStatus = VerificationStatus.FAILED,
+                        errorMessage = exception.message ?: "Verification failed"
                     )
                 }
             )

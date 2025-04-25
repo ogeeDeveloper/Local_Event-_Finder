@@ -10,9 +10,7 @@ import com.ogeedeveloper.local_event_finder_frontend.domain.repository.AuthRepos
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -101,46 +99,38 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun sendEmailVerification(): Result<Boolean> {
-        return try {
-            // Mock sending email verification
-            delay(1000)
-            Result.success(true)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun signOut() {
+        _currentUser.value = null
+        _authState.value = AuthState.UNAUTHENTICATED
+
+        // Clear local storage
+        authLocalDataSource.clearUser()
+        authLocalDataSource.clearAuthSession()
     }
 
-    override suspend fun sendPhoneVerification(phoneNumber: String): Result<Boolean> {
+    override fun getAuthState(): Flow<AuthState> {
+        return _authState
+    }
+
+    override fun getCurrentUser(): Flow<User?> {
+        return _currentUser
+    }
+
+    override suspend fun sendPhoneVerificationCode(phoneNumber: String): Result<String> {
         return try {
             // Mock sending SMS verification
             delay(1000)
+            // Generate a verification code (in a real app, this would come from the server)
+            val code = "123456"
             // Store verification code in preferences (for demo only, not secure)
-            sharedPreferences.edit().putString("VERIFICATION_CODE", "123456").apply()
-            Result.success(true)
+            sharedPreferences.edit().putString("VERIFICATION_CODE", code).apply()
+            Result.success("Verification code sent successfully")
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun verifyEmail(code: String): Result<Boolean> {
-        return try {
-            // Mock email verification
-            delay(1000)
-
-            val pendingUser = authLocalDataSource.getPendingUser()
-            pendingUser?.let {
-                val updatedUser = it.copy(isEmailVerified = true)
-                authLocalDataSource.savePendingUser(updatedUser)
-            }
-
-            Result.success(true)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun verifyPhone(code: String): Result<Boolean> {
+    override suspend fun verifyPhoneNumber(phoneNumber: String, code: String): Result<String> {
         return try {
             // Check if code matches stored code
             val storedCode = sharedPreferences.getString("VERIFICATION_CODE", null)
@@ -150,7 +140,7 @@ class AuthRepositoryImpl @Inject constructor(
                     val updatedUser = it.copy(isPhoneVerified = true)
                     authLocalDataSource.savePendingUser(updatedUser)
                 }
-                Result.success(true)
+                Result.success("Phone number verified successfully")
             } else {
                 Result.failure(Exception("Invalid verification code"))
             }
@@ -159,36 +149,49 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun resetPassword(email: String): Result<Boolean> {
+    override suspend fun sendEmailVerificationCode(email: String): Result<String> {
         return try {
-            // Mock password reset
+            // Mock sending email verification
             delay(1000)
-            Result.success(true)
+            // Generate a verification code (in a real app, this would come from the server)
+            val code = "654321"
+            // Store verification code in preferences (for demo only, not secure)
+            sharedPreferences.edit().putString("EMAIL_VERIFICATION_CODE", code).apply()
+            Result.success("Verification code sent to your email")
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun signOut(): Result<Boolean> {
+    override suspend fun verifyEmail(email: String, code: String): Result<String> {
         return try {
-            _currentUser.value = null
-            _authState.value = AuthState.UNAUTHENTICATED
-
-            // Clear local storage
-            authLocalDataSource.clearUser()
-            authLocalDataSource.clearAuthSession()
-
-            Result.success(true)
+            // Check if code matches stored code
+            val storedCode = sharedPreferences.getString("EMAIL_VERIFICATION_CODE", null)
+            if (code == storedCode || code == "654321") { // Allow test code for debugging
+                val pendingUser = authLocalDataSource.getPendingUser()
+                pendingUser?.let {
+                    val updatedUser = it.copy(isEmailVerified = true)
+                    authLocalDataSource.savePendingUser(updatedUser)
+                }
+                Result.success("Email verified successfully")
+            } else {
+                Result.failure(Exception("Invalid verification code"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override fun isUserSignedIn(): Flow<Boolean> {
-        return _authState.map { it == AuthState.AUTHENTICATED }
-    }
-
-    override fun getCurrentUser(): Flow<User?> {
-        return _currentUser.asStateFlow()
+    override suspend fun updateUserProfile(user: User): Result<User> {
+        return try {
+            // Update user in local storage
+            authLocalDataSource.saveUser(user)
+            // Update current user state
+            _currentUser.value = user
+            
+            Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

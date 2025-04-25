@@ -127,10 +127,11 @@ class LoginViewModel @Inject constructor(
         _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
 
         viewModelScope.launch {
-            val result = authRepository.resetPassword(currentState.email)
+            // Using sendEmailVerificationCode as a replacement for resetPassword
+            val result = authRepository.sendEmailVerificationCode(currentState.email)
 
             result.fold(
-                onSuccess = {
+                onSuccess = { message ->
                     _uiState.value = currentState.copy(
                         isLoading = false,
                         errorMessage = null

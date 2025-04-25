@@ -14,6 +14,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.locat
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.notifications.NotificationPermissionScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.verification.VerifyEmailScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.verification.VerifyPhoneScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.welcome.WelcomeScreen
 
 /**
  * Navigation routes for the app
@@ -151,7 +152,7 @@ class NavigationActionsImpl(
 @Composable
 fun AppNavHost(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = AppDestinations.WELCOME_ROUTE
+    startDestination: String = AppDestinations.LOGIN_ROUTE 
 ) {
     val navigationActions = remember(navController) {
         NavigationActionsImpl(navController)
@@ -162,12 +163,12 @@ fun AppNavHost(
         startDestination = startDestination
     ) {
         // Welcome and login screens (outside of any nested graph)
-//        composable(route = AppDestinations.WELCOME_ROUTE) {
-//            WelcomeScreen(
-//                onGetStartedClick = { navigationActions.navigateToOnboarding() },
-//                onSignInClick = { navigationActions.navigateToLogin() }
-//            )
-//        }
+        composable(route = AppDestinations.WELCOME_ROUTE) {
+            WelcomeScreen(
+                onGetStartedClick = { navigationActions.navigateToOnboarding() },
+                onSignInClick = { navigationActions.navigateToLogin() }
+            )
+        }
 
         composable(route = AppDestinations.LOGIN_ROUTE) {
             LoginScreen(

@@ -5,27 +5,6 @@ import com.ogeedeveloper.local_event_finder_frontend.domain.model.User
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Interface for authentication operations
- */
-interface AuthRepository {
-    suspend fun signIn(email: String, password: String): Result<User>
-    suspend fun signUp(
-        fullName: String,
-        email: String,
-        phoneNumber: String,
-        password: String
-    ): Result<User>
-    suspend fun sendEmailVerification(): Result<Boolean>
-    suspend fun sendPhoneVerification(phoneNumber: String): Result<Boolean>
-    suspend fun verifyEmail(code: String): Result<Boolean>
-    suspend fun verifyPhone(code: String): Result<Boolean>
-    suspend fun resetPassword(email: String): Result<Boolean>
-    suspend fun signOut(): Result<Boolean>
-    fun isUserSignedIn(): Flow<Boolean>
-    fun getCurrentUser(): Flow<User?>
-}
-
-/**
  * Interface for user operations
  */
 interface UserRepository {
