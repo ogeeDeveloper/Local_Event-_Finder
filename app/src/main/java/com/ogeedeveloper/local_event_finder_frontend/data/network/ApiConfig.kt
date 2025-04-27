@@ -14,7 +14,9 @@ class ApiConfig @Inject constructor() {
         private const val IS_DEV_ENVIRONMENT = true
         
         // Development base URL (local development server)
-        private const val DEV_BASE_URL = "http://localhost:8000/api/"
+        // Use 10.0.2.2 instead of localhost when running on Android emulator
+        // 10.0.2.2 is a special alias to your host machine's loopback interface (localhost)
+        private const val DEV_BASE_URL = "http://10.0.2.2:8000/api/"
         
         // Production base URL (replace with your actual production API URL)
         private const val PROD_BASE_URL = "https://api.yourdomain.com/api/"
