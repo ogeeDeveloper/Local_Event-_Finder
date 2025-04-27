@@ -16,10 +16,10 @@ class ApiConfig @Inject constructor() {
         // Development base URL (local development server)
         // Use 10.0.2.2 instead of localhost when running on Android emulator
         // 10.0.2.2 is a special alias to your host machine's loopback interface (localhost)
-        private const val DEV_BASE_URL = "http://10.0.2.2:8000/api/"
+        private const val DEV_BASE_URL = "https://ssycoder.com/projects/lef/api/"
         
         // Production base URL (replace with your actual production API URL)
-        private const val PROD_BASE_URL = "https://api.yourdomain.com/api/"
+        private const val PROD_BASE_URL = "https://ssycoder.com/projects/lef/api/"
         
         // API endpoints (relative paths)
         const val LOGIN_ENDPOINT = "auth/login"
