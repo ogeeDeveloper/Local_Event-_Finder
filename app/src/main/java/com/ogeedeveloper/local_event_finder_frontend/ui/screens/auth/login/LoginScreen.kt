@@ -59,6 +59,7 @@ fun LoginScreen(
     onBackClick: () -> Unit,
     onLoginSuccess: () -> Unit,
     onSignUpClick: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
@@ -166,7 +167,7 @@ fun LoginScreen(
                     )
                 }
 
-                TextButton(onClick = { /* Handle forgot password */ }) {
+                TextButton(onClick = onForgotPasswordClick) {
                     Text(
                         text = "forgot password?",
                         style = MaterialTheme.typography.bodyMedium,
@@ -239,7 +240,8 @@ fun LoginScreenPreview() {
         LoginScreen(
             onBackClick = {},
             onLoginSuccess = {},
-            onSignUpClick = {}
+            onSignUpClick = {},
+            onForgotPasswordClick = {}
         )
     }
 }

@@ -9,6 +9,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.login.LoginScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup.CreateAccountScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.resetpassword.resetPasswordGraph
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.interests.InterestsScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.location.LocationPermissionScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.notifications.NotificationPermissionScreen
@@ -23,6 +24,7 @@ object AppDestinations {
     // Root destinations
     const val WELCOME_ROUTE = "welcome"
     const val LOGIN_ROUTE = "login"
+    const val RESET_PASSWORD_ROUTE = "reset_password"
 
     // Nested graphs
     const val ONBOARDING_ROUTE = "onboarding"
@@ -51,6 +53,7 @@ interface NavigationActions {
     // Welcome and authentication
     fun navigateToWelcome()
     fun navigateToLogin()
+    fun navigateToResetPassword()
     fun navigateToOnboarding()
 
     // Onboarding flow
@@ -87,6 +90,10 @@ class NavigationActionsImpl(
 
     override fun navigateToLogin() {
         navController.navigate(AppDestinations.LOGIN_ROUTE)
+    }
+
+    override fun navigateToResetPassword() {
+        navController.navigate(AppDestinations.RESET_PASSWORD_ROUTE)
     }
 
     override fun navigateToOnboarding() {
@@ -174,9 +181,16 @@ fun AppNavHost(
             LoginScreen(
                 onBackClick = { navigationActions.navigateBack() },
                 onLoginSuccess = { navigationActions.navigateToHome() },
-                onSignUpClick = { navigationActions.navigateToOnboarding() }
+                onSignUpClick = { navigationActions.navigateToOnboarding() },
+                onForgotPasswordClick = { navigationActions.navigateToResetPassword() }
             )
         }
+
+        // Reset Password flow
+        resetPasswordGraph(
+            navController = navController,
+            onBackToLogin = { navigationActions.navigateToLogin() }
+        )
 
         // Onboarding flow nested navigation graph
         navigation(
