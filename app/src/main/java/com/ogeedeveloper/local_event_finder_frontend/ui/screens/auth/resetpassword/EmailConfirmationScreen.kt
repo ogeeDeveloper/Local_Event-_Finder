@@ -57,12 +57,20 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.theme.Localeventfinderfr
 @Composable
 fun EmailConfirmationScreen(
     onBackClick: () -> Unit,
-    onCodeVerified: () -> Unit,
+    onCodeVerified: (resetToken: String) -> Unit,
     modifier: Modifier = Modifier,
+    email: String? = null,
     viewModel: ResetPasswordViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Set the email from navigation arguments if it's not already set
+    LaunchedEffect(email) {
+        if (!email.isNullOrEmpty() && uiState.email.isEmpty()) {
+            viewModel.updateEmail(email)
+        }
+    }
     
     // Show error message if any
     LaunchedEffect(uiState.errorMessage) {
@@ -74,7 +82,7 @@ fun EmailConfirmationScreen(
     // Navigate to new password screen when code is verified
     LaunchedEffect(uiState.isCodeVerified) {
         if (uiState.isCodeVerified) {
-            onCodeVerified()
+            onCodeVerified(uiState.resetToken)
         }
     }
     
@@ -154,7 +162,7 @@ fun EmailConfirmationScreen(
                 )
                 
                 TextButton(
-                    onClick = { viewModel.requestPasswordResetCode() }
+                    onClick = { viewModel.resendResetCode() }
                 ) {
                     Text(
                         text = "Request again",
@@ -169,7 +177,7 @@ fun EmailConfirmationScreen(
                 text = "Confirm Code",
                 isLoading = uiState.isLoading,
                 onClick = { viewModel.verifyResetCode() },
-                enabled = uiState.verificationCode.length == 4,
+                enabled = uiState.verificationCode.length == 6,
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -195,7 +203,7 @@ fun VerificationCodeInput(
         BasicTextField(
             value = code,
             onValueChange = { 
-                if (it.length <= 4 && it.all { char -> char.isDigit() }) {
+                if (it.length <= 6 && it.all { char -> char.isDigit() }) {
                     onCodeChange(it)
                 }
             },
@@ -214,7 +222,7 @@ fun VerificationCodeInput(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            repeat(4) { index ->
+            repeat(6) { index ->
                 CodeDigitBox(
                     digit = if (index < code.length) code[index].toString() else "",
                     isFilled = index < code.length

@@ -184,12 +184,52 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserProfile(user: User): Result<User> {
         return try {
-            // Update user in local storage
-            authLocalDataSource.saveUser(user)
-            // Update current user state
+            // In a real implementation, you would call an API to update the user profile
+            // For now, we'll just update the local user
             _currentUser.value = user
-            
+            authLocalDataSource.saveUser(user)
             Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun requestPasswordReset(email: String): Result<String> {
+        return try {
+            val response = authApi.requestPasswordReset(email)
+            // Return the verification code if available (for testing) or the success message
+            val resultMessage = response.code ?: response.message
+            Result.success(resultMessage)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun verifyResetCode(email: String, code: String): Result<String> {
+        return try {
+            val response = authApi.verifyResetCode(email, code)
+            // Return the reset token
+            Result.success(response.reset_token)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun resetPassword(email: String, resetToken: String, newPassword: String): Result<Boolean> {
+        return try {
+            val success = authApi.resetPassword(email, resetToken, newPassword)
+            Result.success(success)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun resendResetCode(email: String): Result<String> {
+        return try {
+            val response = authApi.resendResetCode(email)
+            // Return the verification code if available (for testing) or the success message
+            val resultMessage = response.code ?: response.message
+            Result.success(resultMessage)
         } catch (e: Exception) {
             Result.failure(e)
         }

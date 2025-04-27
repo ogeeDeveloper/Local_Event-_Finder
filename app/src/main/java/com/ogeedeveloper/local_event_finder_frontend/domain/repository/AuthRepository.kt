@@ -84,4 +84,35 @@ interface AuthRepository {
      * @return Result containing updated User if successful
      */
     suspend fun updateUserProfile(user: User): Result<User>
+
+    /**
+     * Request a password reset for the given email
+     * @param email User's email
+     * @return Result containing a String with the verification code (if available) or success message
+     */
+    suspend fun requestPasswordReset(email: String): Result<String>
+
+    /**
+     * Verify a password reset code
+     * @param email User's email
+     * @param code Verification code
+     * @return Result containing the reset token if successful
+     */
+    suspend fun verifyResetCode(email: String, code: String): Result<String>
+
+    /**
+     * Reset the password using the reset token
+     * @param email User's email
+     * @param resetToken Reset token from verify reset code
+     * @param newPassword New password
+     * @return Result containing a Boolean indicating success or failure
+     */
+    suspend fun resetPassword(email: String, resetToken: String, newPassword: String): Result<Boolean>
+
+    /**
+     * Resend the password reset code
+     * @param email User's email
+     * @return Result containing a String with the verification code (if available) or success message
+     */
+    suspend fun resendResetCode(email: String): Result<String>
 }

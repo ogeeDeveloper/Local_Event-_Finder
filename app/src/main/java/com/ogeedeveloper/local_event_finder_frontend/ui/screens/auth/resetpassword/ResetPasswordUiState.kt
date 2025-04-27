@@ -8,6 +8,7 @@ data class ResetPasswordUiState(
     val verificationCode: String = "",
     val newPassword: String = "",
     val confirmPassword: String = "",
+    val resetToken: String = "",
     val isLoading: Boolean = false,
     val isEmailSubmitted: Boolean = false,
     val isCodeVerified: Boolean = false,
