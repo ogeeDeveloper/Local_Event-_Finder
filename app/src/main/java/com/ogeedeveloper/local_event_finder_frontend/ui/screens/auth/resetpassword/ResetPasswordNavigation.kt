@@ -13,9 +13,16 @@ import androidx.navigation.navigation
 object ResetPasswordDestinations {
     const val RESET_PASSWORD_ROUTE = "reset_password"
     const val EMAIL_SCREEN = "email_screen"
-    const val CONFIRMATION_SCREEN = "confirmation_screen"
-    const val NEW_PASSWORD_SCREEN = "new_password_screen"
+    const val CONFIRMATION_SCREEN = "confirmation_screen/{email}"
+    const val NEW_PASSWORD_SCREEN = "new_password_screen/{email}/{resetToken}"
     const val SUCCESS_SCREEN = "success_screen"
+    
+    // Helper functions to create routes with arguments
+    fun confirmationScreenRoute(email: String): String = 
+        "confirmation_screen/${email}"
+        
+    fun newPasswordScreenRoute(email: String, resetToken: String): String = 
+        "new_password_screen/${email}/${resetToken}"
 }
 
 /**
@@ -32,25 +39,31 @@ fun NavGraphBuilder.resetPasswordGraph(
         composable(ResetPasswordDestinations.EMAIL_SCREEN) {
             ResetPasswordEmailScreen(
                 onBackClick = onBackToLogin,
-                onCodeSent = {
-                    navController.navigate(ResetPasswordDestinations.CONFIRMATION_SCREEN)
+                onCodeSent = { email ->
+                    navController.navigate(ResetPasswordDestinations.confirmationScreenRoute(email))
                 }
             )
         }
         
-        composable(ResetPasswordDestinations.CONFIRMATION_SCREEN) {
+        composable(ResetPasswordDestinations.CONFIRMATION_SCREEN) { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email")
             EmailConfirmationScreen(
+                email = email,
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onCodeVerified = {
-                    navController.navigate(ResetPasswordDestinations.NEW_PASSWORD_SCREEN)
+                onCodeVerified = { resetToken ->
+                    navController.navigate(ResetPasswordDestinations.newPasswordScreenRoute(email!!, resetToken))
                 }
             )
         }
         
-        composable(ResetPasswordDestinations.NEW_PASSWORD_SCREEN) {
+        composable(ResetPasswordDestinations.NEW_PASSWORD_SCREEN) { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email")
+            val resetToken = backStackEntry.arguments?.getString("resetToken")
             NewPasswordScreen(
+                email = email,
+                resetToken = resetToken,
                 onBackClick = {
                     navController.popBackStack()
                 },

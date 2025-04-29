@@ -40,10 +40,26 @@ fun NewPasswordScreen(
     onBackClick: () -> Unit,
     onPasswordReset: () -> Unit,
     modifier: Modifier = Modifier,
+    email: String? = null,
+    resetToken: String? = null,
     viewModel: ResetPasswordViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Set the email from navigation arguments if it's not already set
+    LaunchedEffect(email) {
+        if (!email.isNullOrEmpty() && uiState.email.isEmpty()) {
+            viewModel.updateEmail(email)
+        }
+    }
+    
+    // Set the reset token from navigation arguments if it's not already set
+    LaunchedEffect(resetToken) {
+        if (!resetToken.isNullOrEmpty() && uiState.resetToken.isEmpty()) {
+            viewModel.updateResetToken(resetToken)
+        }
+    }
     
     // Show error message if any
     LaunchedEffect(uiState.errorMessage) {

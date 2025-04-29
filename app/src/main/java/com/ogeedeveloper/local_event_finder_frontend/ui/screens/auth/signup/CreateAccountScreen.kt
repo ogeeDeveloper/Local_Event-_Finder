@@ -1,6 +1,5 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup
 
-import android.R.attr.thickness
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,17 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,8 +35,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.DropdownInput
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PasswordTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.OnboardingScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
@@ -41,14 +46,28 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.theme.Localeventfinderfr
 @Composable
 fun CreateAccountScreen(
     onBackClick: () -> Unit,
-    onContinue: () -> Unit,
-    modifier: Modifier = Modifier
+    onContinue: (String, String) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: CreateAccountViewModel = hiltViewModel()
 ) {
-    var fullName by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show error message if any
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+    
+    // Navigate to next screen when registration is successful
+    LaunchedEffect(uiState.successMessage) {
+        if (uiState.successMessage != null) {
+            // Pass the formatted phone number and userId to the next screen
+            val formattedPhoneNumber = formatPhoneNumber(uiState.countryCode, uiState.phoneNumber)
+            onContinue(formattedPhoneNumber, uiState.userId)
+        }
+    }
 
     OnboardingScreen(
         title = "Create Account",
@@ -56,7 +75,9 @@ fun CreateAccountScreen(
         showBackButton = true,
         onBackClick = onBackClick,
         primaryButtonText = "Create Account",
-        onPrimaryButtonClick = onContinue,
+        onPrimaryButtonClick = { viewModel.createAccount() },
+        isLoading = uiState.isLoading,
+        snackbarHostState = snackbarHostState,
         modifier = modifier
     ) {
         Column(
@@ -65,74 +86,94 @@ fun CreateAccountScreen(
         ) {
             // Full Name field
             AppTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
+                value = uiState.fullName,
+                onValueChange = { viewModel.onFullNameChanged(it) },
                 label = "Full Name",
-                placeholder = "Placeholder",
-                leadingIcon = Icons.Default.Favorite
+                leadingIcon = Icons.Default.AccountBox,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
-
+            
             // Email field
             AppTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = "Email Address",
-                placeholder = "Placeholder",
-                leadingIcon = Icons.Default.Favorite,
+                value = uiState.email,
+                onValueChange = { viewModel.onEmailChanged(it) },
+                label = "Email",
+                leadingIcon = Icons.Default.Email,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
-                )
+                ),
+                modifier = Modifier.fillMaxWidth()
             )
-
-            // Phone number field with country code
+            
+            // Phone number field with country code selector
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Country selector (simplified for this example)
+                var selectedCountryCode by remember { mutableStateOf("+1") }
+                
                 CountryCodeSelector(
-                    selectedCountryCode = "876",
-                    onCountrySelected = { },
-                    modifier = Modifier.weight(0.35f)
+                    selectedCountryCode = selectedCountryCode,
+                    onCountrySelected = { 
+                        selectedCountryCode = it
+                        viewModel.onCountryCodeChanged(it)
+                    },
+                    modifier = Modifier.weight(0.3f)
                 )
-
-                // Phone number input
+                
                 AppTextField(
-                    value = phoneNumber,
-                    onValueChange = { phoneNumber = it },
+                    value = if (uiState.phoneNumber.startsWith("+")) {
+                        uiState.phoneNumber.substringAfter(selectedCountryCode)
+                    } else if (uiState.phoneNumber.isNotEmpty()) {
+                        uiState.phoneNumber.substringAfter("+")
+                    } else {
+                        ""
+                    },
+                    onValueChange = { 
+                        // Remove the country code if user enters it
+                        val phoneNumber = if (it.startsWith("+")) {
+                            it.substringAfter("+")
+                        } else {
+                            it
+                        }
+                        viewModel.onPhoneNumberChanged(phoneNumber) 
+                    },
                     label = "Phone Number",
-                    placeholder = "1237838",
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Phone,
                         imeAction = ImeAction.Next
                     ),
-                    modifier = Modifier.weight(0.65f)
+                    modifier = Modifier.weight(0.7f)
                 )
             }
-
+            
             // Password field
             PasswordTextField(
-                value = password,
-                onValueChange = { password = it },
+                value = uiState.password,
+                onValueChange = { viewModel.onPasswordChanged(it) },
                 label = "Password",
-                placeholder = "Placeholder"
+                modifier = Modifier.fillMaxWidth()
             )
-
+            
             // Confirm Password field
             PasswordTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                value = uiState.confirmPassword,
+                onValueChange = { viewModel.onConfirmPasswordChanged(it) },
                 label = "Confirm Password",
-                placeholder = "Placeholder"
+                modifier = Modifier.fillMaxWidth()
             )
-
+            
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Social login divider
+            
+            // Social login options
             SocialLoginDivider()
-
-            // Social login buttons
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             SocialLoginButtons()
         }
     }
@@ -147,12 +188,11 @@ fun CountryCodeSelector(
 ) {
     // This is a simplified country code selector for the example
     // A real implementation would use a dropdown with country flags and codes
-
-    com.ogeedeveloper.local_event_finder_frontend.ui.components.DropdownInput(
+    DropdownInput(
         selectedOption = selectedCountryCode,
         onOptionSelected = onCountrySelected,
-        options = listOf("876", "123", "456", "789"),
-        label = "Phone Number",
+        options = listOf("+1", "+876", "+44", "+91"),
+        label = "Code",
         modifier = modifier
     )
 }
@@ -165,8 +205,6 @@ fun SocialLoginDivider(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Modifier.weight(1f)
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
         HorizontalDivider(
             modifier = Modifier.weight(1f),
             thickness = 1.dp,
@@ -222,7 +260,7 @@ fun SocialButton(
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.material3.IconButton(
+    IconButton(
         onClick = onClick,
         modifier = modifier
             .clip(CircleShape)
@@ -242,7 +280,18 @@ fun CreateAccountScreenPreview() {
     LocaleventfinderfrontendTheme {
         CreateAccountScreen(
             onBackClick = {},
-            onContinue = {}
+            onContinue = { _, _ -> }
         )
     }
+}
+
+private fun formatPhoneNumber(countryCode: String, phoneNumber: String): String {
+    // Remove any non-digit characters from the phone number
+    val digitsOnly = phoneNumber.replace(Regex("[^0-9]"), "")
+    
+    // Ensure country code starts with +
+    val formattedCountryCode = if (countryCode.startsWith("+")) countryCode else "+$countryCode"
+    
+    // Return the formatted phone number in E.164 format
+    return "$formattedCountryCode$digitsOnly"
 }

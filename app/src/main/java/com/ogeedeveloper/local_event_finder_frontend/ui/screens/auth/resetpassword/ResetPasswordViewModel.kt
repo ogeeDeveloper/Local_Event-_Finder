@@ -35,24 +35,36 @@ class ResetPasswordViewModel @Inject constructor(
         _uiState.update { it.copy(confirmPassword = password) }
     }
     
+    fun updateResetToken(token: String) {
+        _uiState.update { it.copy(resetToken = token) }
+    }
+    
     fun requestPasswordResetCode() {
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 
-                // In a real implementation, this would call the API
-                // authRepository.requestPasswordResetCode(uiState.value.email)
+                val result = authRepository.requestPasswordReset(uiState.value.email)
                 
-                // Simulate API call
-                kotlinx.coroutines.delay(1000)
-                
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false, 
-                        isEmailSubmitted = true,
-                        errorMessage = null
-                    )
-                }
+                result.fold(
+                    onSuccess = { message ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false, 
+                                isEmailSubmitted = true,
+                                errorMessage = null
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Failed to send verification code"
+                            )
+                        }
+                    }
+                )
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(
@@ -69,19 +81,31 @@ class ResetPasswordViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 
-                // In a real implementation, this would call the API
-                // authRepository.verifyPasswordResetCode(uiState.value.email, uiState.value.verificationCode)
+                val result = authRepository.verifyResetCode(
+                    uiState.value.email, 
+                    uiState.value.verificationCode
+                )
                 
-                // Simulate API call
-                kotlinx.coroutines.delay(1000)
-                
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        isCodeVerified = true,
-                        errorMessage = null
-                    )
-                }
+                result.fold(
+                    onSuccess = { resetToken ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                isCodeVerified = true,
+                                resetToken = resetToken,
+                                errorMessage = null
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Failed to verify code"
+                            )
+                        }
+                    }
+                )
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(
@@ -104,28 +128,72 @@ class ResetPasswordViewModel @Inject constructor(
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 
-                // In a real implementation, this would call the API
-                // authRepository.resetPassword(
-                //     uiState.value.email,
-                //     uiState.value.verificationCode,
-                //     uiState.value.newPassword
-                // )
+                val result = authRepository.resetPassword(
+                    uiState.value.email,
+                    uiState.value.resetToken,
+                    uiState.value.newPassword
+                )
                 
-                // Simulate API call
-                kotlinx.coroutines.delay(1000)
-                
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        isPasswordReset = true,
-                        errorMessage = null
-                    )
-                }
+                result.fold(
+                    onSuccess = { success ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                isPasswordReset = success,
+                                errorMessage = if (!success) "Failed to reset password" else null
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Failed to reset password"
+                            )
+                        }
+                    }
+                )
             } catch (e: Exception) {
                 _uiState.update { 
                     it.copy(
                         isLoading = false,
                         errorMessage = e.message ?: "Failed to reset password"
+                    )
+                }
+            }
+        }
+    }
+    
+    fun resendResetCode() {
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                
+                val result = authRepository.resendResetCode(uiState.value.email)
+                
+                result.fold(
+                    onSuccess = { message ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = null
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Failed to resend code"
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message ?: "Failed to resend code"
                     )
                 }
             }

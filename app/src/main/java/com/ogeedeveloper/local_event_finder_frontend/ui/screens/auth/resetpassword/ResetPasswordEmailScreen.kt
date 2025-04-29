@@ -42,7 +42,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.theme.Localeventfinderfr
 @Composable
 fun ResetPasswordEmailScreen(
     onBackClick: () -> Unit,
-    onCodeSent: () -> Unit,
+    onCodeSent: (email: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ResetPasswordViewModel = hiltViewModel()
 ) {
@@ -59,7 +59,7 @@ fun ResetPasswordEmailScreen(
     // Navigate to code verification screen when email is submitted
     LaunchedEffect(uiState.isEmailSubmitted) {
         if (uiState.isEmailSubmitted) {
-            onCodeSent()
+            onCodeSent(uiState.email)
         }
     }
     
