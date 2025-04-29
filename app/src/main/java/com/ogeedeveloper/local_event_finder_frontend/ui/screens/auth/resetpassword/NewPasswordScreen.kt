@@ -97,7 +97,7 @@ fun NewPasswordScreen(
                 value = uiState.newPassword,
                 onValueChange = { viewModel.updateNewPassword(it) },
                 label = "Password",
-                placeholder = "Placeholder",
+                placeholder = "Enter your new password",
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -107,7 +107,7 @@ fun NewPasswordScreen(
                 value = uiState.confirmPassword,
                 onValueChange = { viewModel.updateConfirmPassword(it) },
                 label = "Confirm Password",
-                placeholder = "Placeholder",
+                placeholder = "Enter the confirm password",
                 isError = uiState.newPassword != uiState.confirmPassword && uiState.confirmPassword.isNotEmpty(),
                 errorMessage = if (uiState.newPassword != uiState.confirmPassword && uiState.confirmPassword.isNotEmpty()) 
                     "Passwords do not match" else null,
