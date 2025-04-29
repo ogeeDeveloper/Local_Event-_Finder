@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -36,18 +37,21 @@ class VerifyPhoneViewModel @Inject constructor(
     val uiState: StateFlow<VerifyPhoneUiState> = _uiState.asStateFlow()
 
     init {
-        // Get pending user data and extract phone number
+        // Get current user data and extract phone number
         viewModelScope.launch {
-            // In a real app, would get this from the repository
-            _uiState.value = _uiState.value.copy(
-                phoneNumber = "+1 (876) 123-4568"  // Demo data
-            )
-
-            // Start countdown for resend button
-            startResendCountdown()
-
-            // Send verification code automatically
-            sendVerificationCode()
+            authRepository.getCurrentUser().collect { user ->
+                user?.let {
+                    _uiState.value = _uiState.value.copy(
+                        phoneNumber = it.phoneNumber
+                    )
+                    
+                    // Start countdown for resend button
+                    startResendCountdown()
+                    
+                    // Send verification code automatically
+                    sendVerificationCode()
+                }
+            }
         }
     }
 

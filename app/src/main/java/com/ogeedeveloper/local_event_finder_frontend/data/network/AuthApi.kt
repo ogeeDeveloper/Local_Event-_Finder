@@ -41,12 +41,13 @@ class AuthApi @Inject constructor(
         email: String,
         password: String,
         phoneNumber: String
-    ): User {
+    ): LoginResponse {
         val registerRequest = RegisterRequest(
             fullName = name,
             email = email,
             password = password,
-            phoneNumber = phoneNumber
+            phoneNumber = phoneNumber,
+            interests = emptyList()
         )
         
         val response = authService.register(registerRequest)
@@ -58,28 +59,33 @@ class AuthApi @Inject constructor(
         }
     }
     
-    suspend fun sendPhoneCode(phoneNumber: String): Boolean {
-        val request = SendPhoneCodeRequest(phoneNumber = phoneNumber)
+    suspend fun sendPhoneVerificationCode(phoneNumber: String, uid: String): SendPhoneCodeResponse {
+        val request = SendPhoneCodeRequest(
+            phoneNumber = phoneNumber,
+            uid = uid
+        )
+        
         val response = authService.sendPhoneCode(request)
         
         if (response.isSuccessful) {
-            return response.body()?.success ?: false
+            return response.body() ?: throw Exception("Empty response body")
         } else {
-            throw Exception("Failed to send phone code: ${response.code()} ${response.message()}")
+            throw Exception("Failed to send verification code: ${response.code()} ${response.message()}")
         }
     }
     
-    suspend fun verifyPhone(phoneNumber: String, code: String): Boolean {
+    suspend fun verifyPhone(phoneNumber: String, code: String): ApiResponse {
         val request = VerifyPhoneRequest(
             phoneNumber = phoneNumber,
             code = code
         )
+        
         val response = authService.verifyPhone(request)
         
         if (response.isSuccessful) {
-            return response.body()?.success ?: false
+            return response.body() ?: throw Exception("Empty response body")
         } else {
-            throw Exception("Failed to verify phone: ${response.code()} ${response.message()}")
+            throw Exception("Phone verification failed: ${response.code()} ${response.message()}")
         }
     }
     
@@ -163,10 +169,10 @@ interface AuthService {
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
     
     @POST("auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<User>
+    suspend fun register(@Body request: RegisterRequest): Response<LoginResponse>
     
     @POST("auth/send-phone-code")
-    suspend fun sendPhoneCode(@Body request: SendPhoneCodeRequest): Response<ApiResponse>
+    suspend fun sendPhoneCode(@Body request: SendPhoneCodeRequest): Response<SendPhoneCodeResponse>
     
     @POST("auth/verify-phone")
     suspend fun verifyPhone(@Body request: VerifyPhoneRequest): Response<ApiResponse>
@@ -199,14 +205,16 @@ data class RegisterRequest(
     val fullName: String,
     val email: String,
     val password: String,
-    val phoneNumber: String
+    val phoneNumber: String,
+    val interests: List<String>
 )
 
 /**
  * Send phone code request data class
  */
 data class SendPhoneCodeRequest(
-    val phoneNumber: String
+    val phoneNumber: String,
+    val uid: String
 )
 
 /**
@@ -272,4 +280,13 @@ data class ResetPasswordRequest(
  */
 data class ResendResetCodeRequest(
     val email: String
+)
+
+/**
+ * Send phone code response data class
+ */
+data class SendPhoneCodeResponse(
+    val message: String,
+    val code: String? = null,
+    val phoneNumber: String
 )

@@ -78,21 +78,33 @@ class AuthRepositoryImpl @Inject constructor(
         password: String
     ): Result<User> {
         return try {
-            // Mock signup process
-            delay(1500) // Simulate network delay
-
-            val user = User(
-                id = UUID.randomUUID().toString(),
-                fullName = fullName,
+            // Call the API to register
+            val loginResponse = authApi.register(
+                name = fullName,
                 email = email,
-                phoneNumber = phoneNumber,
-                isEmailVerified = false,
-                isPhoneVerified = false
+                password = password,
+                phoneNumber = phoneNumber
             )
-
-            // In a real app, store temporarily until verification
-            authLocalDataSource.savePendingUser(user)
-
+            
+            // Extract user and token from response
+            val user = loginResponse.user
+            val authToken = loginResponse.token
+            
+            // Save auth session with token
+            authLocalDataSource.saveAuthSession(
+                AuthSession(
+                    accessToken = authToken,
+                    expiresAt = Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000) // 24 hours from now
+                )
+            )
+            
+            // Save user to local storage
+            authLocalDataSource.saveUser(user)
+            
+            // Update current user state
+            _currentUser.value = user
+            _authState.value = AuthState.AUTHENTICATED
+            
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -118,13 +130,17 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun sendPhoneVerificationCode(phoneNumber: String): Result<String> {
         return try {
-            // Mock sending SMS verification
-            delay(1000)
-            // Generate a verification code (in a real app, this would come from the server)
-            val code = "123456"
-            // Store verification code in preferences (for demo only, not secure)
-            sharedPreferences.edit().putString("VERIFICATION_CODE", code).apply()
-            Result.success("Verification code sent successfully")
+            val currentUser = _currentUser.value ?: throw Exception("User not authenticated")
+            
+            // Call the API to send verification code
+            val response = authApi.sendPhoneVerificationCode(
+                phoneNumber = phoneNumber,
+                uid = currentUser.id
+            )
+            
+            // For development purposes, return the code in the success message
+            // In production, this would just return a success message
+            Result.success("Verification code sent successfully. Code: ${response.code}")
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -132,21 +148,23 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun verifyPhoneNumber(phoneNumber: String, code: String): Result<String> {
         return try {
-            // Check if code matches stored code
-            val storedCode = sharedPreferences.getString("VERIFICATION_CODE", null)
-            if (code == storedCode || code == "123456") { // Allow test code for debugging
-                val pendingUser = authLocalDataSource.getPendingUser()
-                pendingUser?.let {
-                    val updatedUser = it.copy(isPhoneVerified = true)
-                    authLocalDataSource.savePendingUser(updatedUser)
-                }
-                Result.success("Phone number verified successfully")
-            } else {
-                Result.failure(Exception("Invalid verification code"))
+            // Call the API to verify phone
+            val response = authApi.verifyPhone(
+                phoneNumber = phoneNumber,
+                code = code
+            )
+
+            // Update the current user with verified phone
+            _currentUser.value?.let { user ->
+                val updatedUser = user.copy(isPhoneVerified = true)
+                _currentUser.value = updatedUser
+                authLocalDataSource.saveUser(updatedUser)
             }
+
+            Result.success(response.message)
         } catch (e: Exception) {
             Result.failure(e)
-        }
+        } as Result<String>
     }
 
     override suspend fun sendEmailVerificationCode(email: String): Result<String> {

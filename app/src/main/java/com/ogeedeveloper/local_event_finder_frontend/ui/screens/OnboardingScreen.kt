@@ -1,6 +1,7 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.LoadingButton
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.OutlinedAppButton
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PrimaryButton
 
@@ -43,42 +47,54 @@ fun OnboardingScreen(
     onSecondaryButtonClick: () -> Unit = {},
     skipButtonText: String? = null,
     onSkipClick: () -> Unit = {},
+    isLoading: Boolean = false,
+    snackbarHostState: SnackbarHostState? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
-            // Top section with back button and title
-            OnboardingTopBar(
-                title = title,
-                subtitle = subtitle,
-                showBackButton = showBackButton,
-                onBackClick = onBackClick
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+            ) {
+                OnboardingTopBar(
+                    title = title,
+                    subtitle = subtitle,
+                    showBackButton = showBackButton,
+                    onBackClick = onBackClick
+                )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Main content area
-            content()
+                // Main content
+                content()
 
-            Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.weight(1f))
 
-            // Bottom section with buttons
-            OnboardingFooter(
-                primaryButtonText = primaryButtonText,
-                primaryButtonIcon = primaryButtonIcon,
-                onPrimaryButtonClick = onPrimaryButtonClick,
-                secondaryButtonText = secondaryButtonText,
-                onSecondaryButtonClick = onSecondaryButtonClick,
-                skipButtonText = skipButtonText,
-                onSkipClick = onSkipClick
-            )
+                // Footer with buttons
+                OnboardingFooter(
+                    primaryButtonText = primaryButtonText,
+                    primaryButtonIcon = primaryButtonIcon,
+                    onPrimaryButtonClick = onPrimaryButtonClick,
+                    secondaryButtonText = secondaryButtonText,
+                    onSecondaryButtonClick = onSecondaryButtonClick,
+                    skipButtonText = skipButtonText,
+                    onSkipClick = onSkipClick,
+                    isLoading = isLoading
+                )
+            }
+
+            // Show snackbar if provided
+            snackbarHostState?.let { hostState ->
+                SnackbarHost(
+                    hostState = hostState,
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter)
+                )
+            }
         }
     }
 }
@@ -137,42 +153,24 @@ fun OnboardingFooter(
     secondaryButtonText: String? = null,
     onSecondaryButtonClick: () -> Unit = {},
     skipButtonText: String? = null,
-    onSkipClick: () -> Unit = {}
+    onSkipClick: () -> Unit = {},
+    isLoading: Boolean = false
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         if (primaryButtonText != null) {
-            PrimaryButton(
-                text = primaryButtonText,
-                onClick = onPrimaryButtonClick,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            if (primaryButtonIcon) {
-                // We can't directly set trailingIcon parameter if it doesn't exist
-                // Instead, add the icon manually as part of the button content
-                // This code is commented out because we're modifying the PrimaryButton implementation below
-
-                /* Correct way would be to update the PrimaryButton component:
-                @Composable
-                fun PrimaryButton(
-                    text: String,
-                    onClick: () -> Unit,
-                    modifier: Modifier = Modifier,
-                    enabled: Boolean = true,
-                    showIcon: Boolean = false
-                ) {
-                    Button(...) {
-                        Text(...)
-                        if (showIcon) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                }
-                */
+            if (isLoading) {
+                LoadingButton(
+                    text = primaryButtonText,
+                    onClick = onPrimaryButtonClick,
+                    isLoading = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                PrimaryButton(
+                    text = primaryButtonText,
+                    onClick = onPrimaryButtonClick,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
