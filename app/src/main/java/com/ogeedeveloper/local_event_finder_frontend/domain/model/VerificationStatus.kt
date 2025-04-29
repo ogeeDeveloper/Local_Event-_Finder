@@ -6,6 +6,8 @@ package com.ogeedeveloper.local_event_finder_frontend.domain.model
 enum class VerificationStatus {
     NOT_STARTED,
     PENDING,
+    CODE_SENT,
+    CODE_ENTERED,
     VERIFIED,
     FAILED
 }

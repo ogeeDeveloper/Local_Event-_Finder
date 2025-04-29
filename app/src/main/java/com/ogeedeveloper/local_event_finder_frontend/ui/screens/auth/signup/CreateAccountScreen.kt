@@ -46,7 +46,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.theme.Localeventfinderfr
 @Composable
 fun CreateAccountScreen(
     onBackClick: () -> Unit,
-    onContinue: () -> Unit,
+    onContinue: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CreateAccountViewModel = hiltViewModel()
 ) {
@@ -63,7 +63,9 @@ fun CreateAccountScreen(
     // Navigate to next screen when registration is successful
     LaunchedEffect(uiState.successMessage) {
         if (uiState.successMessage != null) {
-            onContinue()
+            // Pass the formatted phone number and userId to the next screen
+            val formattedPhoneNumber = formatPhoneNumber(uiState.countryCode, uiState.phoneNumber)
+            onContinue(formattedPhoneNumber, uiState.userId)
         }
     }
 
@@ -278,7 +280,18 @@ fun CreateAccountScreenPreview() {
     LocaleventfinderfrontendTheme {
         CreateAccountScreen(
             onBackClick = {},
-            onContinue = {}
+            onContinue = { _, _ -> }
         )
     }
+}
+
+private fun formatPhoneNumber(countryCode: String, phoneNumber: String): String {
+    // Remove any non-digit characters from the phone number
+    val digitsOnly = phoneNumber.replace(Regex("[^0-9]"), "")
+    
+    // Ensure country code starts with +
+    val formattedCountryCode = if (countryCode.startsWith("+")) countryCode else "+$countryCode"
+    
+    // Return the formatted phone number in E.164 format
+    return "$formattedCountryCode$digitsOnly"
 }

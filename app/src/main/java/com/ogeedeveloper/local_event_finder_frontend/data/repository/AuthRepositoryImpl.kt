@@ -128,14 +128,12 @@ class AuthRepositoryImpl @Inject constructor(
         return _currentUser
     }
 
-    override suspend fun sendPhoneVerificationCode(phoneNumber: String): Result<String> {
+    override suspend fun sendPhoneVerificationCode(phoneNumber: String, userId: String): Result<String> {
         return try {
-            val currentUser = _currentUser.value ?: throw Exception("User not authenticated")
-            
-            // Call the API to send verification code
+            // Call the API to send verification code with explicit userId
             val response = authApi.sendPhoneVerificationCode(
                 phoneNumber = phoneNumber,
-                uid = currentUser.id
+                uid = userId
             )
             
             // For development purposes, return the code in the success message

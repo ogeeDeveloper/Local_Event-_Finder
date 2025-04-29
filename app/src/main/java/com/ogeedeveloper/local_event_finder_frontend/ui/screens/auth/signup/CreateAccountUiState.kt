@@ -31,5 +31,6 @@ data class CreateAccountUiState(
     val isPasswordError: Boolean = false,
     val isConfirmPasswordError: Boolean = false,
     val passwordErrorMessage: String? = null,
-    val emailErrorMessage: String? = null
+    val emailErrorMessage: String? = null,
+    val userId: String = "" // Added to store the user ID from registration response
 )

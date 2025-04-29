@@ -7,6 +7,7 @@ import java.util.Date
  */
 data class User(
     val id: String = "",
+    val uid: String = "", // Added to match the API response
     val fullName: String = "",
     val email: String = "",
     val phoneNumber: String = "",

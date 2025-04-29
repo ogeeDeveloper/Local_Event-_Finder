@@ -3,10 +3,12 @@ package com.ogeedeveloper.local_event_finder_frontend.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.login.LoginScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup.CreateAccountScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.resetpassword.resetPasswordGraph
@@ -33,6 +35,7 @@ object AppDestinations {
     // Onboarding routes
     const val CREATE_ACCOUNT_ROUTE = "create_account"
     const val VERIFY_PHONE_ROUTE = "verify_phone"
+    const val VERIFY_PHONE_ROUTE_WITH_ARGS = "verify_phone/{phoneNumber}/{userId}"
     const val VERIFY_EMAIL_ROUTE = "verify_email"
     const val INTERESTS_ROUTE = "interests"
     const val LOCATION_PERMISSION_ROUTE = "location_permission"
@@ -59,6 +62,7 @@ interface NavigationActions {
     // Onboarding flow
     fun navigateToCreateAccount()
     fun navigateToVerifyPhone()
+    fun navigateToVerifyPhone(phoneNumber: String, userId: String)
     fun navigateToVerifyEmail()
     fun navigateToInterests()
     fun navigateToLocationPermission()
@@ -108,6 +112,10 @@ class NavigationActionsImpl(
 
     override fun navigateToVerifyPhone() {
         navController.navigate(AppDestinations.VERIFY_PHONE_ROUTE)
+    }
+
+    override fun navigateToVerifyPhone(phoneNumber: String, userId: String) {
+        navController.navigate("${AppDestinations.VERIFY_PHONE_ROUTE_WITH_ARGS.replace("{phoneNumber}", phoneNumber).replace("{userId}", userId)}")
     }
 
     override fun navigateToVerifyEmail() {
@@ -200,14 +208,37 @@ fun AppNavHost(
             composable(route = AppDestinations.CREATE_ACCOUNT_ROUTE) {
                 CreateAccountScreen(
                     onBackClick = { navigationActions.navigateToWelcome() },
-                    onContinue = { navigationActions.navigateToVerifyPhone() }
+                    onContinue = { phoneNumber, userId -> 
+                        navigationActions.navigateToVerifyPhone(phoneNumber, userId) 
+                    }
                 )
             }
 
             composable(route = AppDestinations.VERIFY_PHONE_ROUTE) {
+                // Use a default phone number for the original route
+                // This route should only be used for testing or direct navigation
                 VerifyPhoneScreen(
                     onBackClick = { navigationActions.navigateBack() },
-                    onContinue = { navigationActions.navigateToVerifyEmail() }
+                    onContinue = { navigationActions.navigateToVerifyEmail() },
+                    phoneNumber = "+16505554567", // Default test phone number
+                    userId = "12345" // Default test user ID
+                )
+            }
+
+            composable(
+                route = AppDestinations.VERIFY_PHONE_ROUTE_WITH_ARGS,
+                arguments = listOf(
+                    navArgument("phoneNumber") { type = NavType.StringType },
+                    navArgument("userId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val phoneNumber = backStackEntry.arguments?.getString("phoneNumber") ?: ""
+                val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                VerifyPhoneScreen(
+                    onBackClick = { navigationActions.navigateBack() },
+                    onContinue = { navigationActions.navigateToVerifyEmail() },
+                    phoneNumber = phoneNumber,
+                    userId = userId
                 )
             }
 

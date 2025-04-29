@@ -13,17 +13,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,8 +36,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.VerificationStatus
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
-import com.ogeedeveloper.local_event_finder_frontend.ui.components.PrimaryButton
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.OnboardingScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.PrimaryLight
@@ -44,18 +47,43 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.theme.PrimaryLight
 fun VerifyPhoneScreen(
     onBackClick: () -> Unit,
     onContinue: () -> Unit,
-    phoneNumber: String = "+1 (876) 123-4568",
-    modifier: Modifier = Modifier
+    phoneNumber: String,
+    userId: String,
+    modifier: Modifier = Modifier,
+    viewModel: VerifyPhoneViewModel = hiltViewModel()
 ) {
-    var verificationCode by remember { mutableStateOf("") }
-    var isVerified by remember { mutableStateOf(false) }
+    // Set the phone number and userId in the ViewModel
+    LaunchedEffect(phoneNumber, userId) {
+        if (phoneNumber.isNotEmpty() && userId.isNotEmpty()) {
+            viewModel.setPhoneNumberAndUserId(phoneNumber, userId)
+        }
+    }
+
+    val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show error message if any
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
+    // Navigate to next screen when verification is successful
+    LaunchedEffect(uiState.verificationStatus) {
+        if (uiState.verificationStatus == VerificationStatus.VERIFIED) {
+            onContinue()
+        }
+    }
 
     OnboardingScreen(
         title = "Verify Your Phone",
         showBackButton = true,
         onBackClick = onBackClick,
-        primaryButtonText = if (isVerified) "Continue" else null,
-        onPrimaryButtonClick = onContinue,
+        primaryButtonText = if (uiState.verificationStatus == VerificationStatus.CODE_ENTERED) "Verify" else null,
+        onPrimaryButtonClick = { viewModel.verifyPhoneNumber() },
+        isLoading = uiState.isLoading,
+        snackbarHostState = snackbarHostState,
         modifier = modifier
     ) {
         Column(
@@ -103,22 +131,16 @@ fun VerifyPhoneScreen(
 
             // Verification code input
             AppTextField(
-                value = verificationCode,
-                onValueChange = {
-                    if (it.length <= 6) {
-                        verificationCode = it
-                        // Auto verify when 6 digits are entered
-                        if (it.length == 6) {
-                            isVerified = true
-                        }
-                    }
+                value = uiState.verificationCode,
+                onValueChange = { 
+                    viewModel.onVerificationCodeChanged(it)
                 },
-                label = "Enter 4-digit code",
+                label = "Verification Code",
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Number,
                     imeAction = ImeAction.Done
                 ),
-                modifier = Modifier.fillMaxWidth(0.7f)
+                modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -128,16 +150,25 @@ fun VerifyPhoneScreen(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TextButton(onClick = { /* Resend code logic */ }) {
+                TextButton(
+                    onClick = { viewModel.sendVerificationCode() },
+                    enabled = uiState.resendCountdown == 0
+                ) {
                     Text(
-                        text = "Resend code (30s)",
-                        color = MaterialTheme.colorScheme.primary
+                        text = if (uiState.resendCountdown > 0) 
+                            "Resend code (${uiState.resendCountdown}s)" 
+                        else 
+                            "Resend code",
+                        color = if (uiState.resendCountdown > 0)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        else
+                            MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
             // Verification status
-            if (isVerified) {
+            if (uiState.verificationStatus == VerificationStatus.VERIFIED) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Row(
@@ -146,7 +177,7 @@ fun VerifyPhoneScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_menu_my_calendar),
+                        imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = Color.Green,
                         modifier = Modifier.size(24.dp)
@@ -162,15 +193,6 @@ fun VerifyPhoneScreen(
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
-
-                // Continue button for verified state
-                if (!isVerified) {
-                    PrimaryButton(
-                        text = "Continue",
-                        onClick = onContinue,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
             }
         }
     }
@@ -183,23 +205,9 @@ fun VerifyPhoneScreenPreview() {
         Surface {
             VerifyPhoneScreen(
                 onBackClick = {},
-                onContinue = {}
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun VerifyPhoneScreenVerifiedPreview() {
-    LocaleventfinderfrontendTheme {
-        Surface {
-            var verificationCode by remember { mutableStateOf("123456") }
-            var isVerified by remember { mutableStateOf(true) }
-
-            VerifyPhoneScreen(
-                onBackClick = {},
-                onContinue = {}
+                onContinue = {},
+                phoneNumber = "+1 (876) 123-4568",
+                userId = "12345"
             )
         }
     }

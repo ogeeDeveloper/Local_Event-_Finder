@@ -51,9 +51,10 @@ interface AuthRepository {
     /**
      * Send verification code to user's phone
      * @param phoneNumber Phone number to verify
+     * @param userId User ID for verification (required for backend)
      * @return Result containing success message or failure
      */
-    suspend fun sendPhoneVerificationCode(phoneNumber: String): Result<String>
+    suspend fun sendPhoneVerificationCode(phoneNumber: String, userId: String): Result<String>
 
     /**
      * Verify phone number with code
