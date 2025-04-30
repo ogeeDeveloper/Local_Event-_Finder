@@ -5,7 +5,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -25,6 +28,8 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.verif
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.verification.VerifyPhoneScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.welcome.WelcomeScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.home.HomeScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.search.SearchScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.filter.FilterScreen
 
 /**
  * Navigation routes for the app
@@ -293,14 +298,23 @@ fun AppNavHost(
             }
 
             composable(route = AppDestinations.SEARCH_ROUTE) {
-                // Temporary placeholder for SearchScreen
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Search Screen",
-                        style = MaterialTheme.typography.headlineMedium
+                var showFilterDialog by remember { mutableStateOf(false) }
+                
+                SearchScreen(
+                    onNavigateToHome = { navigationActions.navigateToHome() },
+                    onNavigateToEvents = { navigationActions.navigateToEvents() },
+                    onNavigateToProfile = { navigationActions.navigateToProfile() },
+                    onNavigateToEventDetails = { eventId -> /* Navigate to event details */ },
+                    onOpenFilter = { showFilterDialog = true }
+                )
+                
+                if (showFilterDialog) {
+                    FilterScreen(
+                        onDismiss = { showFilterDialog = false },
+                        onApplyFilter = { filterState ->
+                            // Apply filter state to search
+                            showFilterDialog = false
+                        }
                     )
                 }
             }
