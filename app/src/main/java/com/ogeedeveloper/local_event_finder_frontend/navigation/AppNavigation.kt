@@ -1,7 +1,13 @@
 package com.ogeedeveloper.local_event_finder_frontend.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,6 +24,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.notif
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.verification.VerifyEmailScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.onboarding.verification.VerifyPhoneScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.welcome.WelcomeScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.home.HomeScreen
 
 /**
  * Navigation routes for the app
@@ -272,20 +279,57 @@ fun AppNavHost(
             }
         }
 
-        // Main app navigation graph (would be implemented similarly)
-//        navigation(
-//            startDestination = AppDestinations.HOME_ROUTE,
-//            route = AppDestinations.MAIN_ROUTE
-//        ) {
-//            composable(route = AppDestinations.HOME_ROUTE) {
-//                HomeScreen(
-//                    onNavigateToSearch = { navigationActions.navigateToSearch() },
-//                    onNavigateToEvents = { navigationActions.navigateToEvents() },
-//                    onNavigateToProfile = { navigationActions.navigateToProfile() }
-//                )
-//            }
-//
-//            // Other main app screens would be added here
-//        }
+        // Main app navigation graph
+        navigation(
+            startDestination = AppDestinations.HOME_ROUTE,
+            route = AppDestinations.MAIN_ROUTE
+        ) {
+            composable(route = AppDestinations.HOME_ROUTE) {
+                HomeScreen(
+                    onNavigateToSearch = { navigationActions.navigateToSearch() },
+                    onNavigateToEvents = { navigationActions.navigateToEvents() },
+                    onNavigateToProfile = { navigationActions.navigateToProfile() }
+                )
+            }
+
+            composable(route = AppDestinations.SEARCH_ROUTE) {
+                // Temporary placeholder for SearchScreen
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Search Screen",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+            }
+
+            composable(route = AppDestinations.EVENTS_ROUTE) {
+                // Temporary placeholder for EventsScreen
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Events Screen",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+            }
+
+            composable(route = AppDestinations.PROFILE_ROUTE) {
+                // Temporary placeholder for ProfileScreen
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Profile Screen",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+            }
+        }
     }
 }
