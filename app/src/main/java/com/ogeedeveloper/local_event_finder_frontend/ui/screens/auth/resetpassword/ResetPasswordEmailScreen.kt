@@ -109,7 +109,7 @@ fun ResetPasswordEmailScreen(
                 value = uiState.email,
                 onValueChange = { viewModel.updateEmail(it) },
                 label = "Email Address",
-                placeholder = "Placeholder",
+                placeholder = "Enter your email address",
                 leadingIcon = Icons.Default.Email,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
