@@ -302,7 +302,8 @@ fun AppNavHost(
                 HomeScreen(
                     onNavigateToSearch = { navigationActions.navigateToSearch() },
                     onNavigateToEvents = { navigationActions.navigateToEvents() },
-                    onNavigateToProfile = { navigationActions.navigateToProfile() }
+                    onNavigateToProfile = { navigationActions.navigateToProfile() },
+                    onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() }
                 )
             }
 
@@ -314,6 +315,7 @@ fun AppNavHost(
                     onNavigateToEvents = { navigationActions.navigateToEvents() },
                     onNavigateToProfile = { navigationActions.navigateToProfile() },
                     onNavigateToEventDetails = { eventId -> /* Navigate to event details */ },
+                    onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() },
                     onOpenFilter = { showFilterDialog = true }
                 )
                 

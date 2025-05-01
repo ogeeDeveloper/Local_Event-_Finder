@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -102,12 +104,17 @@ fun BottomNavBarPreview() {
                 unselectedIcon = Icons.Outlined.Home
             ),
             BottomNavItem(
-                title = "Search",
+                title = "Explore",
                 selectedIcon = Icons.Filled.Search,
                 unselectedIcon = Icons.Outlined.Search
             ),
             BottomNavItem(
-                title = "Events",
+                title = "Create",
+                selectedIcon = Icons.Filled.Add,
+                unselectedIcon = Icons.Outlined.Add
+            ),
+            BottomNavItem(
+                title = "Bookings",
                 selectedIcon = Icons.Filled.Event,
                 unselectedIcon = Icons.Filled.Event
             ),
@@ -117,5 +124,13 @@ fun BottomNavBarPreview() {
                 unselectedIcon = Icons.Outlined.Person
             )
         )
+        
+        Surface {
+            BottomNavBar(
+                currentTab = selectedTab,
+                onTabSelected = { selectedTab = it },
+                items = items
+            )
+        }
     }
 }

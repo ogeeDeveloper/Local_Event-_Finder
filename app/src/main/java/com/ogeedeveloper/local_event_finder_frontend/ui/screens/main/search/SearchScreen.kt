@@ -21,12 +21,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -76,6 +78,7 @@ fun SearchScreen(
     onNavigateToEvents: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToEventDetails: (String) -> Unit,
+    onNavigateToCreateEvent: () -> Unit,
     onOpenFilter: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel()
@@ -88,12 +91,17 @@ fun SearchScreen(
                 unselectedIcon = Icons.Outlined.Home
             ),
             BottomNavItem(
-                title = "Search",
+                title = "Explore",
                 selectedIcon = Icons.Filled.Search,
                 unselectedIcon = Icons.Outlined.Search
             ),
             BottomNavItem(
-                title = "Events",
+                title = "Create",
+                selectedIcon = Icons.Filled.Add,
+                unselectedIcon = Icons.Outlined.Add
+            ),
+            BottomNavItem(
+                title = "Bookings",
                 selectedIcon = Icons.Filled.Event,
                 unselectedIcon = Icons.Outlined.Event
             ),
@@ -116,8 +124,9 @@ fun SearchScreen(
                     when (index) {
                         0 -> onNavigateToHome()
                         1 -> {} // Already on Search
-                        2 -> onNavigateToEvents()
-                        3 -> onNavigateToProfile()
+                        2 -> onNavigateToCreateEvent()
+                        3 -> onNavigateToEvents()
+                        4 -> onNavigateToProfile()
                     }
                 },
                 items = bottomNavItems

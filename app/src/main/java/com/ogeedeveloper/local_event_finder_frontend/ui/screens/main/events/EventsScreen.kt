@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
@@ -79,12 +80,17 @@ fun EventsScreen(
                 unselectedIcon = Icons.Outlined.Home
             ),
             BottomNavItem(
-                title = "Search",
+                title = "Explore",
                 selectedIcon = Icons.Filled.Search,
                 unselectedIcon = Icons.Outlined.Search
             ),
             BottomNavItem(
-                title = "Events",
+                title = "Create",
+                selectedIcon = Icons.Filled.Add,
+                unselectedIcon = Icons.Outlined.Add
+            ),
+            BottomNavItem(
+                title = "Bookings",
                 selectedIcon = Icons.Filled.Event,
                 unselectedIcon = Icons.Outlined.Event
             ),
@@ -96,7 +102,7 @@ fun EventsScreen(
         )
     }
 
-    var selectedTabIndex by remember { mutableIntStateOf(2) } // Events tab selected by default
+    var selectedTabIndex by remember { mutableIntStateOf(3) } // Events tab selected by default
 
     Scaffold(
         bottomBar = {
@@ -107,25 +113,13 @@ fun EventsScreen(
                     when (index) {
                         0 -> onNavigateToHome()
                         1 -> onNavigateToSearch()
-                        2 -> {} // Already on Events
-                        3 -> onNavigateToProfile()
+                        2 -> onNavigateToCreateEvent()
+                        3 -> {} // Already on Events
+                        4 -> onNavigateToProfile()
                     }
                 },
                 items = bottomNavItems
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToCreateEvent,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Create Event"
-                )
-            }
         }
     ) { paddingValues ->
         EventsContent(
