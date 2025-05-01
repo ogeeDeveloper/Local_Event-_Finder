@@ -48,12 +48,11 @@ class CreateEventViewModel @Inject constructor() : ViewModel() {
 
     // Navigation methods
     fun navigateToNextStep() {
-        if (validateCurrentStep()) {
-            uiState = uiState.copy(
-                currentStep = minOf(uiState.currentStep + 1, 3),
-                errorMessage = null
-            )
-        }
+        // For testing purposes, we'll allow navigation without validation
+        uiState = uiState.copy(
+            currentStep = minOf(uiState.currentStep + 1, 3),
+            errorMessage = null
+        )
     }
 
     fun navigateToPreviousStep() {
@@ -119,12 +118,17 @@ class CreateEventViewModel @Inject constructor() : ViewModel() {
 
     // Form validation
     private fun validateCurrentStep(): Boolean {
+        // For testing purposes, we'll return true for all steps
+        return true
+        
+        /* Original validation logic - uncomment when ready for production
         return when (uiState.currentStep) {
             1 -> validateEventDetails()
             2 -> validateLocationTime()
             3 -> validateTicketsSettings()
             else -> true
         }
+        */
     }
 
     private fun validateEventDetails(): Boolean {

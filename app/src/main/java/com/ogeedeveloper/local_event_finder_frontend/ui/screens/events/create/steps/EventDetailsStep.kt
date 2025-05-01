@@ -174,7 +174,7 @@ fun CategoryDropdown(
             readOnly = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = true },
+                .clickable(onClick = { expanded = true }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)

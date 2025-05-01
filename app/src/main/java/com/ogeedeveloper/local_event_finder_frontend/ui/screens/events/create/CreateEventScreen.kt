@@ -127,6 +127,16 @@ fun CreateEventScreen(
                 )
             }
             
+            // Display error message if any
+            uiState.errorMessage?.let { errorMessage ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            
             Spacer(modifier = Modifier.height(32.dp))
             
             // Navigation buttons
