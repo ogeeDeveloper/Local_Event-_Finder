@@ -32,6 +32,10 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.search.Sear
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.filter.FilterScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.events.EventsScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.CreateEventScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.ProfileScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.EditPersonalInfoScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.EditAccountScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.SelectLanguageScreen
 
 /**
  * Navigation routes for the app
@@ -61,6 +65,11 @@ object AppDestinations {
     const val EVENTS_ROUTE = "events"
     const val PROFILE_ROUTE = "profile"
     const val CREATE_EVENT_ROUTE = "create_event"
+    
+    // Profile routes
+    const val EDIT_PERSONAL_INFO_ROUTE = "edit_personal_info"
+    const val EDIT_ACCOUNT_ROUTE = "edit_account"
+    const val SELECT_LANGUAGE_ROUTE = "select_language"
 }
 
 /**
@@ -89,6 +98,11 @@ interface NavigationActions {
     fun navigateToEvents()
     fun navigateToProfile()
     fun navigateToCreateEvent()
+    
+    // Profile screens
+    fun navigateToEditPersonalInfo()
+    fun navigateToEditAccount()
+    fun navigateToSelectLanguage()
 
     // Common actions
     fun navigateBack()
@@ -175,6 +189,19 @@ class NavigationActionsImpl(
 
     override fun navigateToCreateEvent() {
         navController.navigate(AppDestinations.CREATE_EVENT_ROUTE)
+    }
+    
+    // Profile screens
+    override fun navigateToEditPersonalInfo() {
+        navController.navigate(AppDestinations.EDIT_PERSONAL_INFO_ROUTE)
+    }
+    
+    override fun navigateToEditAccount() {
+        navController.navigate(AppDestinations.EDIT_ACCOUNT_ROUTE)
+    }
+    
+    override fun navigateToSelectLanguage() {
+        navController.navigate(AppDestinations.SELECT_LANGUAGE_ROUTE)
     }
 
     override fun navigateBack() {
@@ -350,16 +377,35 @@ fun AppNavHost(
             }
 
             composable(route = AppDestinations.PROFILE_ROUTE) {
-                // Temporary placeholder for ProfileScreen
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Profile Screen",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
+                ProfileScreen(
+                    onNavigateToHome = { navigationActions.navigateToHome() },
+                    onNavigateToSearch = { navigationActions.navigateToSearch() },
+                    onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() },
+                    onNavigateToEvents = { navigationActions.navigateToEvents() },
+                    onNavigateToEditPersonalInfo = { navigationActions.navigateToEditPersonalInfo() },
+                    onNavigateToEditAccount = { navigationActions.navigateToEditAccount() },
+                    onNavigateToSelectLanguage = { navigationActions.navigateToSelectLanguage() },
+                    onSignOut = { navigationActions.navigateToLogin() }
+                )
+            }
+            
+            // Profile related screens
+            composable(route = AppDestinations.EDIT_PERSONAL_INFO_ROUTE) {
+                EditPersonalInfoScreen(
+                    onNavigateBack = { navigationActions.navigateBack() }
+                )
+            }
+            
+            composable(route = AppDestinations.EDIT_ACCOUNT_ROUTE) {
+                EditAccountScreen(
+                    onNavigateBack = { navigationActions.navigateBack() }
+                )
+            }
+            
+            composable(route = AppDestinations.SELECT_LANGUAGE_ROUTE) {
+                SelectLanguageScreen(
+                    onNavigateBack = { navigationActions.navigateBack() }
+                )
             }
         }
     }
