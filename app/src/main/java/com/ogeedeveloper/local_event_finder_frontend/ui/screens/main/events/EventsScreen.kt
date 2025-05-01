@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -28,6 +29,8 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -64,6 +67,7 @@ fun EventsScreen(
     onNavigateToSearch: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToEventDetails: (String) -> Unit,
+    onNavigateToCreateEvent: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EventsViewModel = hiltViewModel()
 ) {
@@ -109,6 +113,19 @@ fun EventsScreen(
                 },
                 items = bottomNavItems
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToCreateEvent,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = "Create Event"
+                )
+            }
         }
     ) { paddingValues ->
         EventsContent(

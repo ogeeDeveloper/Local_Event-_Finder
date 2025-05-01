@@ -31,6 +31,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.home.HomeSc
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.search.SearchScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.filter.FilterScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.events.EventsScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.CreateEventScreen
 
 /**
  * Navigation routes for the app
@@ -59,8 +60,8 @@ object AppDestinations {
     const val SEARCH_ROUTE = "search"
     const val EVENTS_ROUTE = "events"
     const val PROFILE_ROUTE = "profile"
+    const val CREATE_EVENT_ROUTE = "create_event"
 }
-
 
 /**
  * Interface defining navigation actions used throughout the app
@@ -87,6 +88,7 @@ interface NavigationActions {
     fun navigateToSearch()
     fun navigateToEvents()
     fun navigateToProfile()
+    fun navigateToCreateEvent()
 
     // Common actions
     fun navigateBack()
@@ -166,7 +168,13 @@ class NavigationActionsImpl(
     }
 
     override fun navigateToProfile() {
-        navController.navigate(AppDestinations.PROFILE_ROUTE)
+        navController.navigate(AppDestinations.PROFILE_ROUTE) {
+            popUpTo(AppDestinations.HOME_ROUTE)
+        }
+    }
+
+    override fun navigateToCreateEvent() {
+        navController.navigate(AppDestinations.CREATE_EVENT_ROUTE)
     }
 
     override fun navigateBack() {
@@ -325,7 +333,17 @@ fun AppNavHost(
                     onNavigateToHome = { navigationActions.navigateToHome() },
                     onNavigateToSearch = { navigationActions.navigateToSearch() },
                     onNavigateToProfile = { navigationActions.navigateToProfile() },
-                    onNavigateToEventDetails = { eventId -> /* Navigate to event details */ }
+                    onNavigateToEventDetails = { eventId -> /* Navigate to event details */ },
+                    onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() }
+                )
+            }
+
+            composable(route = AppDestinations.CREATE_EVENT_ROUTE) {
+                CreateEventScreen(
+                    onNavigateBack = { navigationActions.navigateBack() },
+                    onEventCreated = { 
+                        navigationActions.navigateToEvents()
+                    }
                 )
             }
 
