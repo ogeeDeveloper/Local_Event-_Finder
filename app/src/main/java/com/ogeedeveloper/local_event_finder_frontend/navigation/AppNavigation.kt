@@ -30,6 +30,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.welcome.WelcomeS
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.home.HomeScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.search.SearchScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.filter.FilterScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.events.EventsScreen
 
 /**
  * Navigation routes for the app
@@ -320,16 +321,12 @@ fun AppNavHost(
             }
 
             composable(route = AppDestinations.EVENTS_ROUTE) {
-                // Temporary placeholder for EventsScreen
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Events Screen",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                }
+                EventsScreen(
+                    onNavigateToHome = { navigationActions.navigateToHome() },
+                    onNavigateToSearch = { navigationActions.navigateToSearch() },
+                    onNavigateToProfile = { navigationActions.navigateToProfile() },
+                    onNavigateToEventDetails = { eventId -> /* Navigate to event details */ }
+                )
             }
 
             composable(route = AppDestinations.PROFILE_ROUTE) {

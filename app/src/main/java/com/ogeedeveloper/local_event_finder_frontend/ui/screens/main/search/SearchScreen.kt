@@ -188,7 +188,7 @@ fun SearchContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_filter_custom),
+                                painter = painterResource(id = R.drawable.setting_4),
                                 contentDescription = "Filter",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(24.dp)
