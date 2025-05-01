@@ -36,6 +36,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,7 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
@@ -74,6 +75,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val bottomNavItems = remember {
         listOf(
             BottomNavItem(
@@ -135,8 +137,9 @@ fun ProfileScreen(
             
             // Profile Header
             ProfileHeader(
-                name = "Ohalo Studio",
-                email = "ohalo.info@gmail.com",
+                name = uiState.fullName,
+                email = uiState.email,
+                profileImageUrl = uiState.profileImageUrl,
                 onEditAccountClick = onNavigateToEditAccount
             )
             
@@ -277,6 +280,7 @@ fun ProfileScreen(
 fun ProfileHeader(
     name: String,
     email: String,
+    profileImageUrl: String?,
     onEditAccountClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -292,14 +296,30 @@ fun ProfileHeader(
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.profile_placeholder),
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
+            if (profileImageUrl != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(profileImageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.profile_placeholder),
+                    fallback = painterResource(id = R.drawable.profile_placeholder)
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.profile_placeholder),
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(16.dp))

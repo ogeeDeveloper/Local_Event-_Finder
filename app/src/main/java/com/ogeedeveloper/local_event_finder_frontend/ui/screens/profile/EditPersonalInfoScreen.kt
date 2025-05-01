@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,138 +43,138 @@ fun EditPersonalInfoScreen(
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    var fullName by remember { mutableStateOf("Ohalo") }
-    var phoneNumber by remember { mutableStateOf("Your text here") }
-    var address by remember { mutableStateOf("Kediri, East Java") }
+    val uiState by viewModel.uiState.collectAsState()
+    
+    var fullName by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    
+    // Initialize form fields with user data when available
+    LaunchedEffect(uiState) {
+        fullName = uiState.fullName
+        phoneNumber = uiState.phoneNumber
+        address = uiState.address
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Personal Info",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium
+                        text = "Edit Personal Info",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
-        }
+        },
+        modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
+                .fillMaxSize()
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            // Full Name
+            // Full Name Field
             Text(
                 text = "Full Name",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                placeholder = { Text("Input your full name here") },
+                placeholder = { Text("Enter your full name") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Phone Number
+            // Phone Number Field
             Text(
                 text = "Phone Number",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
             OutlinedTextField(
                 value = phoneNumber,
                 onValueChange = { phoneNumber = it },
-                placeholder = { Text("Input your phone number here") },
+                placeholder = { Text("Enter your phone number") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Address
+            // Address Field
             Text(
                 text = "Address",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
             OutlinedTextField(
                 value = address,
                 onValueChange = { address = it },
-                placeholder = { Text("Input your address here") },
+                placeholder = { Text("Enter your address") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                minLines = 3,
-                maxLines = 3
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
             
             Spacer(modifier = Modifier.weight(1f))
             
             // Save Button
             Button(
-                onClick = {
-                    // Save changes and navigate back
-                    onNavigateBack()
+                onClick = { 
+                    // TODO: Implement saving the updated profile info
+                    onNavigateBack() 
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
                     text = "Save",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

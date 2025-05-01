@@ -10,6 +10,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,6 +19,7 @@ data class ProfileUiState(
     val email: String = "",
     val phoneNumber: String = "",
     val address: String = "",
+    val profileImageUrl: String? = null,
     val language: String = "English",
     val isDarkMode: Boolean = false,
     val isLoading: Boolean = false,
@@ -41,17 +43,25 @@ class ProfileViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
-                // In a real app, this would fetch user data from the repository
-                // For now, we'll use sample data
-                _uiState.value = _uiState.value.copy(
-                    fullName = "Ohalo Studio",
-                    email = "ohalo.info@gmail.com",
-                    phoneNumber = "Your text here",
-                    address = "Kediri, East Java",
-                    language = "English",
-                    isDarkMode = false,
-                    isLoading = false
-                )
+                // Collect user data from the repository
+                authRepository.getCurrentUser().collectLatest { user ->
+                    if (user != null) {
+                        _uiState.value = _uiState.value.copy(
+                            fullName = user.fullName,
+                            email = user.email,
+                            phoneNumber = user.phoneNumber,
+                            // Address is not part of the User model, so we'll keep it empty or use a default
+                            address = "Not specified", // This could be updated when we have address data
+                            profileImageUrl = user.profileImageUrl,
+                            isLoading = false
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessage = "User data not available"
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

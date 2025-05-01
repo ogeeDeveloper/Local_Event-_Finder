@@ -33,6 +33,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -48,6 +51,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 
@@ -58,12 +63,26 @@ fun EditAccountScreen(
     modifier: Modifier = Modifier,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    var username by remember { mutableStateOf("ohalo.info") }
-    var email by remember { mutableStateOf("ohalo.info@gmail.com") }
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Form state
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
-    var retypeNewPassword by remember { mutableStateOf("") }
-    var showNewPassword by remember { mutableStateOf(false) }
-    var showRetypePassword by remember { mutableStateOf(false) }
+    var confirmPassword by remember { mutableStateOf("") }
+    
+    // Password visibility state
+    var currentPasswordVisible by remember { mutableStateOf(false) }
+    var newPasswordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
+    
+    // Initialize form fields with user data when available
+    LaunchedEffect(uiState) {
+        // Extract username from full name (first part) or use full name
+        username = uiState.fullName.split(" ").firstOrNull() ?: uiState.fullName
+        email = uiState.email
+    }
 
     Scaffold(
         topBar = {
@@ -71,223 +90,243 @@ fun EditAccountScreen(
                 title = {
                     Text(
                         text = "Edit Account",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
-        }
+        },
+        modifier = modifier.fillMaxSize()
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
+                .fillMaxSize()
         ) {
-            // Profile Image with Change Photo button
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Profile Image
+            Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                // Profile Image
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(70.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surface)
-                ) {
+                if (uiState.profileImageUrl != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(uiState.profileImageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(id = R.drawable.profile_placeholder),
+                        fallback = painterResource(id = R.drawable.profile_placeholder)
+                    )
+                } else {
                     Image(
                         painter = painterResource(id = R.drawable.profile_placeholder),
                         contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .size(70.dp)
-                            .clip(CircleShape),
+                        modifier = Modifier.size(100.dp),
                         contentScale = ContentScale.Crop
                     )
                 }
-                
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                // Change Photo Button
-                Text(
-                    text = "Change Photo",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.clickable { /* Open photo picker */ }
-                )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Account Section Title
+            // Change Photo Text
             Text(
-                text = "Account",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Username
-            Text(
-                text = "Username",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                placeholder = { Text("Input your username here") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                singleLine = true
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Email
-            Text(
-                text = "Email",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                placeholder = { Text("Input your email here") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                text = "Change Photo",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 8.dp)
+                    .clickable { /* TODO: Implement photo change functionality */ }
             )
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Change Password Section
+            // Username Field
+            Text(
+                text = "Username",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                placeholder = { Text("Enter your username") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Email Field
+            Text(
+                text = "Email",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                placeholder = { Text("Enter your email") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Password Change Section
             Text(
                 text = "Change Password",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // New Password
+            // Current Password Field
             Text(
-                text = "New Password",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "Current Password",
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-            
             Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = currentPassword,
+                onValueChange = { currentPassword = it },
+                placeholder = { Text("Enter current password") },
+                visualTransformation = if (currentPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { currentPasswordVisible = !currentPasswordVisible }) {
+                        Icon(
+                            imageVector = if (currentPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (currentPasswordVisible) "Hide password" else "Show password"
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
             
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // New Password Field
+            Text(
+                text = "New Password",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
                 value = newPassword,
                 onValueChange = { newPassword = it },
-                placeholder = { Text("Input your new password here") },
-                visualTransformation = if (showNewPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                placeholder = { Text("Enter new password") },
+                visualTransformation = if (newPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    IconButton(onClick = { showNewPassword = !showNewPassword }) {
+                    IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
                         Icon(
-                            imageVector = if (showNewPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (showNewPassword) "Hide password" else "Show password"
+                            imageVector = if (newPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (newPasswordVisible) "Hide password" else "Show password"
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Retype New Password
+            // Confirm Password Field
             Text(
-                text = "Retype New Password",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "Confirm Password",
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-            
             Spacer(modifier = Modifier.height(8.dp))
-            
             OutlinedTextField(
-                value = retypeNewPassword,
-                onValueChange = { retypeNewPassword = it },
-                placeholder = { Text("Retype your new password here") },
-                visualTransformation = if (showRetypePassword) VisualTransformation.None else PasswordVisualTransformation(),
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                placeholder = { Text("Confirm new password") },
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    IconButton(onClick = { showRetypePassword = !showRetypePassword }) {
+                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
-                            imageVector = if (showRetypePassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = if (showRetypePassword) "Hide password" else "Show password"
+                            imageVector = if (confirmPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                singleLine = true
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
             )
             
             Spacer(modifier = Modifier.weight(1f))
             
             // Save Button
             Button(
-                onClick = {
-                    // Save changes and navigate back
-                    onNavigateBack()
+                onClick = { 
+                    // TODO: Implement saving the updated account info
+                    onNavigateBack() 
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(
                     text = "Save",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
