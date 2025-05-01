@@ -1,6 +1,9 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.steps
 
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -31,10 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.DropdownInput
@@ -52,6 +60,13 @@ fun EventDetailsStep(
     onImageSelected: (Uri?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        onImageSelected(uri)
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
         // Event Title
         Text(
@@ -131,7 +146,7 @@ fun EventDetailsStep(
         
         ImageUploadBox(
             imageUri = imageUri,
-            onImageClick = { /* Open image picker */ }
+            onImageClick = { imagePickerLauncher.launch("image/*") }
         )
     }
 }
@@ -206,12 +221,16 @@ fun ImageUploadBox(
         contentAlignment = Alignment.Center
     ) {
         if (imageUri != null) {
-            // In a real app, this would display the selected image
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+            // Display the selected image using Coil
+            Image(
+                painter = rememberAsyncImagePainter(
+                    ImageRequest.Builder(LocalContext.current)
+                        .data(data = imageUri)
+                        .build()
+                ),
+                contentDescription = "Selected image",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         } else {
             Column(
