@@ -5,6 +5,7 @@ plugins {
 //    id("com.google.devtools.ksp")
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+//    id("com.google.gms.google-services")  // Add Google Services plugin
 }
 
 android {
@@ -71,8 +72,13 @@ dependencies {
     
     // Google Maps
     implementation("com.google.maps.android:maps-compose:2.11.4")
-    implementation("com.google.android.gms:play-services-maps:18.1.0")
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.gms:play-services-maps:19.2.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+    
+    // Firebase Authentication
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
     
     // Retrofit for network calls
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

@@ -1,5 +1,6 @@
 package com.ogeedeveloper.local_event_finder_frontend.domain.repository
 
+import android.content.Intent
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.AuthState
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.User
 import kotlinx.coroutines.flow.Flow
@@ -116,4 +117,17 @@ interface AuthRepository {
      * @return Result containing a String with the verification code (if available) or success message
      */
     suspend fun resendResetCode(email: String): Result<String>
+
+    /**
+     * Get Google Sign-In intent for authentication
+     * @return Intent for Google Sign-In
+     */
+    fun getGoogleSignInIntent(): Intent
+
+    /**
+     * Sign in with Google
+     * @param idToken ID token from Google Sign-In
+     * @return Result containing the User if successful, or an exception if failed
+     */
+    suspend fun signInWithGoogle(idToken: String): Result<User>
 }

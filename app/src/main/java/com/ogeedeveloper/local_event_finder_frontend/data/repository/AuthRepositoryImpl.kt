@@ -1,6 +1,10 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
+import android.content.Intent
 import android.content.SharedPreferences
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
 import com.ogeedeveloper.local_event_finder_frontend.data.storage.AuthLocalDataSource
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.AuthSession
@@ -23,7 +27,8 @@ import javax.inject.Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val authApi: AuthApi,
     private val authLocalDataSource: AuthLocalDataSource,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
+    private val googleSignInClient: GoogleSignInClient
 ) : AuthRepository {
 
     private val _currentUser = MutableStateFlow<User?>(null)
@@ -246,6 +251,48 @@ class AuthRepositoryImpl @Inject constructor(
             // Return the verification code if available (for testing) or the success message
             val resultMessage = response.code ?: response.message
             Result.success(resultMessage)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun getGoogleSignInIntent(): Intent {
+        return googleSignInClient.signInIntent
+    }
+    
+    override suspend fun signInWithGoogle(idToken: String): Result<User> {
+        return try {
+            // Since we don't have Firebase Auth set up yet, we'll directly call the backend API
+            val response = authApi.loginWithGoogle(
+                idToken = idToken,
+                email = "",  // These will be extract
+                // ed from the token on the backend
+                name = ""
+            )
+            
+            // Create local user from response
+            val user = User(
+                id = response.user.id,
+                fullName = response.user.fullName,
+                email = response.user.email,
+                phoneNumber = response.user.phoneNumber,
+                profileImageUrl = response.user.profileImageUrl
+            )
+            
+            // Save user and token locally
+            authLocalDataSource.saveUser(user)
+            authLocalDataSource.saveAuthSession(AuthSession(
+                userId = user.id,
+                accessToken = response.token,
+                refreshToken = "", 
+                expiresAt = Date(System.currentTimeMillis() + 3600000)
+            ))
+            
+            // Update state
+            _currentUser.value = user
+            _authState.value = AuthState.AUTHENTICATED
+            
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }

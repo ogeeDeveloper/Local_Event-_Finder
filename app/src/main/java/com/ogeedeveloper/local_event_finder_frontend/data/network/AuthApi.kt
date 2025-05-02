@@ -159,6 +159,28 @@ class AuthApi @Inject constructor(
             throw Exception("Failed to resend reset code: ${response.code()} ${response.message()}")
         }
     }
+    
+    /**
+     * Login with Google
+     * @param idToken Google ID token
+     * @param email User's email from Google
+     * @param name User's name from Google
+     * @return LoginResponse containing token and user data
+     */
+    suspend fun loginWithGoogle(idToken: String, email: String, name: String): LoginResponse {
+        val googleLoginRequest = GoogleLoginRequest(
+            idToken = idToken,
+            email = email,
+            name = name
+        )
+        val response = authService.loginWithGoogle(googleLoginRequest)
+        
+        if (response.isSuccessful) {
+            return response.body() ?: throw Exception("Empty response body")
+        } else {
+            throw Exception("Google login failed: ${response.code()} ${response.message()}")
+        }
+    }
 }
 
 /**
@@ -188,6 +210,9 @@ interface AuthService {
     
     @POST("auth/resend-reset-code")
     suspend fun resendResetCode(@Body request: ResendResetCodeRequest): Response<RequestResetPasswordResponse>
+    
+    @POST("auth/login-with-google")
+    suspend fun loginWithGoogle(@Body request: GoogleLoginRequest): Response<LoginResponse>
 }
 
 /**
@@ -289,4 +314,13 @@ data class SendPhoneCodeResponse(
     val message: String,
     val code: String? = null,
     val phoneNumber: String
+)
+
+/**
+ * Google login request data class
+ */
+data class GoogleLoginRequest(
+    val idToken: String,
+    val email: String,
+    val name: String
 )

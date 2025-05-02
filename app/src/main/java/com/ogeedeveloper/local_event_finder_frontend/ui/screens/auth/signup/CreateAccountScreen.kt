@@ -176,7 +176,10 @@ fun CreateAccountScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            SocialLoginButtons()
+            SocialLoginButtons(
+                onGoogleClick = { /* Handle Google login */ },
+                onFacebookClick = { /* Handle Facebook login */ }
+            )
         }
     }
 }
@@ -230,7 +233,9 @@ fun SocialLoginDivider(
 
 @Composable
 fun SocialLoginButtons(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onGoogleClick: () -> Unit = {},
+    onFacebookClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -239,7 +244,7 @@ fun SocialLoginButtons(
     ) {
         // Google login button
         SocialButton(
-            onClick = { /* Handle Google login */ },
+            onClick = onGoogleClick,
             iconResId = R.drawable.ic_google,
             contentDescription = "Continue with Google"
         )
@@ -248,7 +253,7 @@ fun SocialLoginButtons(
 
         // Facebook login button
         SocialButton(
-            onClick = { /* Handle Facebook login */ },
+            onClick = onFacebookClick,
             iconResId = R.drawable.facebook,
             contentDescription = "Continue with Facebook"
         )

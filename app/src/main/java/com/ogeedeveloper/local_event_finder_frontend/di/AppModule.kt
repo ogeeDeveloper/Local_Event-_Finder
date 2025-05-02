@@ -2,7 +2,11 @@ package com.ogeedeveloper.local_event_finder_frontend.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.gson.Gson
+import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.data.network.ApiConfig
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthService
@@ -133,12 +137,35 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideGoogleSignInOptions(@ApplicationContext context: Context): GoogleSignInOptions {
+        return GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .build()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideGoogleSignInClient(
+        @ApplicationContext context: Context,
+        options: GoogleSignInOptions
+    ): GoogleSignInClient {
+        return GoogleSignIn.getClient(context, options)
+    }
+
+    @Provides
+    @Singleton
     fun provideAuthRepository(
         authApi: AuthApi,
         authLocalDataSource: AuthLocalDataSource,
-        sharedPreferences: SharedPreferences
+        sharedPreferences: SharedPreferences,
+        googleSignInClient: GoogleSignInClient
     ): AuthRepository {
-        return AuthRepositoryImpl(authApi, authLocalDataSource, sharedPreferences)
+        return AuthRepositoryImpl(
+            authApi = authApi,
+            authLocalDataSource = authLocalDataSource,
+            sharedPreferences = sharedPreferences,
+            googleSignInClient = googleSignInClient
+        )
     }
 
     @Provides

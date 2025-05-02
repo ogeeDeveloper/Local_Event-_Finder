@@ -1,7 +1,12 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.login
 
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.tasks.Task
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,6 +93,52 @@ class LoginViewModel @Inject constructor(
                         errorMessage = exception.message ?: "Login failed"
                     )
                 }
+            )
+        }
+    }
+
+    fun getGoogleSignInIntent(): Intent {
+        return authRepository.getGoogleSignInIntent()
+    }
+
+    fun handleGoogleSignInResult(task: Task<GoogleSignInAccount>) {
+        try {
+            val currentState = _uiState.value
+            _uiState.value = currentState.copy(isLoading = true, errorMessage = null)
+
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account?.idToken
+
+            if (idToken != null) {
+                viewModelScope.launch {
+                    val result = authRepository.signInWithGoogle(idToken)
+
+                    result.fold(
+                        onSuccess = {
+                            _uiState.value = currentState.copy(
+                                isLoading = false,
+                                email = it.email // Set the email from the Google account
+                            )
+                            // Login successful - navigation handled by UI
+                        },
+                        onFailure = { exception ->
+                            _uiState.value = currentState.copy(
+                                isLoading = false,
+                                errorMessage = exception.message ?: "Google Sign-In failed"
+                            )
+                        }
+                    )
+                }
+            } else {
+                _uiState.value = currentState.copy(
+                    isLoading = false,
+                    errorMessage = "Google Sign-In failed: No ID token"
+                )
+            }
+        } catch (e: ApiException) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                errorMessage = "Google Sign-In failed: ${e.statusCode}"
             )
         }
     }

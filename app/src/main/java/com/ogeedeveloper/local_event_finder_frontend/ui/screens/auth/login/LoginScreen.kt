@@ -1,5 +1,8 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.login
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,6 +41,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -45,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PasswordTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.PrimaryButton
@@ -67,6 +72,17 @@ fun LoginScreen(
     val focusManager = LocalFocusManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            viewModel.handleGoogleSignInResult(task)
+        }
+    }
 
     LaunchedEffect(uiState.isLoading) {
         if (!uiState.isLoading && uiState.errorMessage == null && uiState.email.isNotEmpty()) {
@@ -201,7 +217,12 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            SocialLoginButtons()
+            SocialLoginButtons(
+                onGoogleClick = {
+                    val signInIntent = viewModel.getGoogleSignInIntent()
+                    googleSignInLauncher.launch(signInIntent)
+                }
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 

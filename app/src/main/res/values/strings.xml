@@ -22,4 +22,5 @@
     <string name="search_route">/search</string>
     <string name="events_route">/events</string>
     <string name="profile_route">/profile</string>
+    <string name="default_web_client_id">default_web_client_id</string>
 </resources>
