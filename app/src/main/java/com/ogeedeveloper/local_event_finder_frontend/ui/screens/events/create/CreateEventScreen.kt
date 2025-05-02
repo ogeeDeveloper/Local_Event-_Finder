@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -35,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.steps.EventDetailsStep
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.steps.LocationTimeStep
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.steps.TicketsSettingsStep
@@ -51,10 +50,9 @@ fun CreateEventScreen(
 
     Scaffold(
         topBar = {
-            CreateEventTopBar(
-                currentStep = uiState.currentStep,
-                totalSteps = 3,
-                onBackClick = {
+            SimpleAppBar(
+                title = "Create Event",
+                onNavigateBack = {
                     if (uiState.currentStep > 1) {
                         viewModel.navigateToPreviousStep()
                     } else {
@@ -218,42 +216,6 @@ fun CreateEventScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun CreateEventTopBar(
-    currentStep: Int,
-    totalSteps: Int,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shadowElevation = 4.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.padding(end = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
-            
-            Text(
-                text = "Create Event",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
