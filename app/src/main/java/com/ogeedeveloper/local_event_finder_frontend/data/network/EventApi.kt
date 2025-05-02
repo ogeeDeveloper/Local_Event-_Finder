@@ -1,6 +1,7 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.network
 
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -9,16 +10,62 @@ import javax.inject.Singleton
  * Uses ApiConfig to determine the correct endpoints for different environments
  */
 @Singleton
-class EventApi @Inject constructor(private val apiConfig: ApiConfig) {
+class EventApi @Inject constructor(
+    private val apiConfig: ApiConfig,
+    private val retrofit: Retrofit
+) {
+    private val eventService: EventService by lazy {
+        retrofit.create(EventService::class.java)
+    }
+    
     suspend fun getEvents(): List<Event> {
-        // In a real app, this would make an API call to apiConfig.getEventsUrl()
-        // Example: retrofit.get(apiConfig.getEventsUrl())
-        throw NotImplementedError("This would be implemented with Retrofit calling ${apiConfig.getEventsUrl()}")
+        val response = eventService.getEvents()
+        if (response.isSuccessful) {
+            return response.body() ?: emptyList()
+        } else {
+            throw Exception("Failed to fetch events: ${response.errorBody()?.string()}")
+        }
     }
     
     suspend fun getEventById(eventId: String): Event {
-        // In a real app, this would make an API call to apiConfig.getEventByIdUrl(eventId)
-        // Example: retrofit.get(apiConfig.getEventByIdUrl(eventId))
-        throw NotImplementedError("This would be implemented with Retrofit calling ${apiConfig.getEventByIdUrl(eventId)}")
+        val response = eventService.getEventById(eventId)
+        if (response.isSuccessful) {
+            return response.body() ?: throw Exception("Event not found")
+        } else {
+            throw Exception("Failed to fetch event: ${response.errorBody()?.string()}")
+        }
+    }
+
+    suspend fun createEvent(
+        title: String,
+        description: String,
+        category: String,
+        locationName: String,
+        longitude: Double,
+        latitude: Double,
+        dateTime: String,
+        price: Double,
+        coverImage: String,
+        totalSeats: Int
+    ): String {
+        val request = CreateEventRequest(
+            title = title,
+            description = description,
+            category = category,
+            locationName = locationName,
+            longitude = longitude,
+            latitude = latitude,
+            dateTime = dateTime,
+            price = price,
+            coverImage = coverImage,
+            totalSeats = totalSeats
+        )
+        
+        val response = eventService.createEvent(request)
+        if (response.isSuccessful) {
+            return response.body()?.id ?: throw Exception("Failed to get event ID from response")
+        } else {
+            throw Exception("Failed to create event: ${response.errorBody()?.string()}")
+        }
     }
 }

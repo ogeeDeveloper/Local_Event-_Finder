@@ -1,5 +1,6 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
+import android.text.format.DateUtils.formatDateTime
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
@@ -142,6 +143,38 @@ class EventRepositoryImpl @Inject constructor(
             delay(800)
             // For demo, just return a subset of events
             emit(mockEvents.take(2))
+        }
+    }
+
+    override suspend fun createEvent(
+        title: String,
+        description: String,
+        category: String,
+        locationName: String,
+        latitude: Double,
+        longitude: Double,
+        dateTime: String,
+        price: Double,
+        coverImage: String?,
+        totalSeats: Int
+    ): Result<String> {
+        return try {
+            // Call the API to create the event
+            val eventId = eventApi.createEvent(
+                title = title,
+                description = description,
+                category = category,
+                locationName = locationName,
+                longitude = longitude,
+                latitude = latitude,
+                dateTime = dateTime,
+                price = price,
+                coverImage = coverImage ?: "",
+                totalSeats = totalSeats
+            )
+            Result.success(eventId)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

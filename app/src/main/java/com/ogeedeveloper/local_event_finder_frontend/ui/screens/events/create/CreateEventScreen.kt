@@ -47,6 +47,13 @@ fun CreateEventScreen(
     viewModel: CreateEventViewModel = hiltViewModel()
 ) {
     val uiState = viewModel.uiState
+    
+    // Handle successful event creation
+    if (uiState.isEventCreated && uiState.createdEventId != null) {
+        // Call the navigation callback to return to the events screen
+        onEventCreated()
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -184,19 +191,27 @@ fun CreateEventScreen(
                     Button(
                         onClick = {
                             viewModel.publishEvent()
-                            onEventCreated()
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        enabled = !uiState.isLoading
                     ) {
-                        Text(
-                            text = "Publish Event",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
-                        )
+                        if (uiState.isLoading) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Publish Event",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 } else {
                     // Continue button for steps 1 and 2

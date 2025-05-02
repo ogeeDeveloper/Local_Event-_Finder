@@ -27,6 +27,18 @@ interface EventRepository {
     suspend fun searchEvents(query: String): Flow<List<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event>>
     suspend fun saveEvent(eventId: String): Result<Boolean>
     suspend fun getSavedEvents(): Flow<List<Event>>
+    suspend fun createEvent(
+        title: String,
+        description: String,
+        category: String,
+        locationName: String,
+        latitude: Double,
+        longitude: Double,
+        dateTime: String,
+        price: Double,
+        coverImage: String?,
+        totalSeats: Int
+    ): Result<String>
 }
 
 // Basic domain model classes that would be defined in their own files

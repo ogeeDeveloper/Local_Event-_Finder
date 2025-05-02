@@ -5,7 +5,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -22,6 +27,8 @@ data class CreateEventUiState(
     
     // Step 2: Location & Time
     val location: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
     val date: String = "",
     val startTime: String = "",
     val endTime: String = "",
@@ -34,25 +41,30 @@ data class CreateEventUiState(
     
     // Form validation
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isEventCreated: Boolean = false,
+    val createdEventId: String? = null
 )
 
 /**
  * ViewModel for the Create Event flow
  */
 @HiltViewModel
-class CreateEventViewModel @Inject constructor() : ViewModel() {
+class CreateEventViewModel @Inject constructor(
+    private val eventRepository: EventRepository
+) : ViewModel() {
 
     var uiState by mutableStateOf(CreateEventUiState())
         private set
 
     // Navigation methods
     fun navigateToNextStep() {
-        // For testing purposes, we'll allow navigation without validation
-        uiState = uiState.copy(
-            currentStep = minOf(uiState.currentStep + 1, 3),
-            errorMessage = null
-        )
+        if (validateCurrentStep()) {
+            uiState = uiState.copy(
+                currentStep = minOf(uiState.currentStep + 1, 3),
+                errorMessage = null
+            )
+        }
     }
 
     fun navigateToPreviousStep() {
@@ -82,6 +94,13 @@ class CreateEventViewModel @Inject constructor() : ViewModel() {
     // Step 2: Location & Time
     fun updateLocation(location: String) {
         uiState = uiState.copy(location = location)
+    }
+    
+    fun updateCoordinates(latitude: Double, longitude: Double) {
+        uiState = uiState.copy(
+            latitude = latitude,
+            longitude = longitude
+        )
     }
 
     fun updateDate(date: String) {
@@ -118,17 +137,12 @@ class CreateEventViewModel @Inject constructor() : ViewModel() {
 
     // Form validation
     private fun validateCurrentStep(): Boolean {
-        // For testing purposes, we'll return true for all steps
-        return true
-        
-        /* Original validation logic - uncomment when ready for production
         return when (uiState.currentStep) {
             1 -> validateEventDetails()
             2 -> validateLocationTime()
             3 -> validateTicketsSettings()
             else -> true
         }
-        */
     }
 
     private fun validateEventDetails(): Boolean {
@@ -168,15 +182,25 @@ class CreateEventViewModel @Inject constructor() : ViewModel() {
             uiState = uiState.copy(errorMessage = "Please enter a valid price")
             return false
         }
+        if (uiState.capacity.isBlank() || uiState.capacity.toIntOrNull() == null) {
+            uiState = uiState.copy(errorMessage = "Please enter a valid capacity")
+            return false
+        }
         return true
+    }
+
+    // Helper method to format date and time for API
+    private fun formatDateTime(): String {
+        // Format: YYYY-MM-DD HH:MM:SS
+        return "${uiState.date} ${uiState.startTime}:00"
     }
 
     // Event creation methods
     fun saveEventDraft() {
-        // In a real app, this would save the event to a repository
+        // In a real app, this would save the event draft locally
         uiState = uiState.copy(isLoading = true)
         
-        // Simulate API call
+        // Simulate saving
         uiState = uiState.copy(
             isLoading = false,
             errorMessage = null
@@ -185,14 +209,59 @@ class CreateEventViewModel @Inject constructor() : ViewModel() {
 
     fun publishEvent() {
         if (validateCurrentStep()) {
-            // In a real app, this would publish the event via a repository
-            uiState = uiState.copy(isLoading = true)
-            
-            // Simulate API call
-            uiState = uiState.copy(
-                isLoading = false,
-                errorMessage = null
-            )
+            viewModelScope.launch {
+                uiState = uiState.copy(isLoading = true, errorMessage = null)
+                
+                try {
+                    // Convert price to double
+                    val price = if (uiState.isFreeEvent) 0.0 else uiState.price.toDoubleOrNull() ?: 0.0
+                    
+                    // Convert capacity to int
+                    val capacity = uiState.capacity.toIntOrNull() ?: 0
+                    
+                    // Get image URL (in a real app, you would upload the image first and get a URL)
+                    val imageUrl = uiState.imageUri?.toString() ?: ""
+                    
+                    // Format date and time
+                    val dateTime = formatDateTime()
+                    
+                    // Call repository to create event
+                    val result = eventRepository.createEvent(
+                        title = uiState.title,
+                        description = uiState.description,
+                        category = uiState.category,
+                        locationName = uiState.location,
+                        latitude = uiState.latitude,
+                        longitude = uiState.longitude,
+                        dateTime = dateTime,
+                        price = price,
+                        coverImage = imageUrl,
+                        totalSeats = capacity
+                    )
+                    
+                    result.fold(
+                        onSuccess = { eventId ->
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                errorMessage = null,
+                                isEventCreated = true,
+                                createdEventId = eventId
+                            )
+                        },
+                        onFailure = { error ->
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                errorMessage = "Failed to create event: ${error.message}"
+                            )
+                        }
+                    )
+                } catch (e: Exception) {
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        errorMessage = "An error occurred: ${e.message}"
+                    )
+                }
+            }
         }
     }
 }
