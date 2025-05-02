@@ -60,6 +60,7 @@ import java.util.Locale
 fun EventDetailsScreen(
     eventId: String,
     onNavigateBack: () -> Unit,
+    onBookEvent: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: EventDetailsViewModel = hiltViewModel()
 ) {
@@ -77,6 +78,7 @@ fun EventDetailsScreen(
     ) { paddingValues ->
         EventDetailsContent(
             event = event,
+            onBookEvent = onBookEvent,
             modifier = Modifier.padding(paddingValues)
         )
     }
@@ -85,6 +87,7 @@ fun EventDetailsScreen(
 @Composable
 fun EventDetailsContent(
     event: Event,
+    onBookEvent: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -329,14 +332,14 @@ fun EventDetailsContent(
             
             // Book Now Button
             Button(
-                onClick = { /* Book the event */ },
+                onClick = { onBookEvent() },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Book Now",
+                    text = if (event.price > 0) "Book Now" else "Reserve Now",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -387,7 +390,8 @@ fun EventDetailsScreenPreview() {
     LocaleventfinderfrontendTheme {
         EventDetailsScreen(
             eventId = "1",
-            onNavigateBack = {}
+            onNavigateBack = {},
+            onBookEvent = {}
         )
     }
 }

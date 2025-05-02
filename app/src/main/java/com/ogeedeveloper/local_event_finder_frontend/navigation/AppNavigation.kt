@@ -37,6 +37,9 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.EditPers
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.EditAccountScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.SelectLanguageScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.details.EventDetailsScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.booking.PaymentMethodScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.booking.PaymentConfirmationScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.booking.PaymentSuccessScreen
 
 /**
  * Navigation routes for the app
@@ -67,6 +70,11 @@ object AppDestinations {
     const val PROFILE_ROUTE = "profile"
     const val CREATE_EVENT_ROUTE = "create_event"
     const val EVENT_DETAILS_ROUTE = "event_details/{eventId}"
+    
+    // Booking flow routes
+    const val PAYMENT_METHOD_ROUTE = "payment_method/{eventId}"
+    const val PAYMENT_CONFIRMATION_ROUTE = "payment_confirmation/{eventId}/{quantity}/{paymentMethod}"
+    const val PAYMENT_SUCCESS_ROUTE = "payment_success/{transactionId}"
     
     // Profile routes
     const val EDIT_PERSONAL_INFO_ROUTE = "edit_personal_info"
@@ -101,6 +109,11 @@ interface NavigationActions {
     fun navigateToProfile()
     fun navigateToCreateEvent()
     fun navigateToEventDetails(eventId: String)
+    
+    // Booking flow
+    fun navigateToPaymentMethod(eventId: String)
+    fun navigateToPaymentConfirmation(eventId: String, quantity: Int, paymentMethod: String)
+    fun navigateToPaymentSuccess(transactionId: String)
     
     // Profile screens
     fun navigateToEditPersonalInfo()
@@ -199,6 +212,30 @@ class NavigationActionsImpl(
     override fun navigateToEventDetails(eventId: String) {
         val route = AppDestinations.EVENT_DETAILS_ROUTE.replace("{eventId}", eventId)
         navController.navigate(route)
+    }
+    
+    // Booking flow
+    override fun navigateToPaymentMethod(eventId: String) {
+        val route = AppDestinations.PAYMENT_METHOD_ROUTE.replace("{eventId}", eventId)
+        navController.navigate(route)
+    }
+    
+    override fun navigateToPaymentConfirmation(eventId: String, quantity: Int, paymentMethod: String) {
+        val route = AppDestinations.PAYMENT_CONFIRMATION_ROUTE
+            .replace("{eventId}", eventId)
+            .replace("{quantity}", quantity.toString())
+            .replace("{paymentMethod}", paymentMethod)
+        navController.navigate(route)
+    }
+    
+    override fun navigateToPaymentSuccess(transactionId: String) {
+        val route = AppDestinations.PAYMENT_SUCCESS_ROUTE.replace("{transactionId}", transactionId)
+        navController.navigate(route) {
+            // Clear the back stack to prevent going back to payment screens
+            popUpTo(AppDestinations.MAIN_ROUTE) {
+                inclusive = false
+            }
+        }
     }
     
     // Profile screens
@@ -394,7 +431,56 @@ fun AppNavHost(
                 val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
                 EventDetailsScreen(
                     eventId = eventId,
-                    onNavigateBack = navigationActions::navigateBack
+                    onNavigateBack = navigationActions::navigateBack,
+                    onBookEvent = { navigationActions.navigateToPaymentMethod(eventId) }
+                )
+            }
+
+            composable(route = AppDestinations.PAYMENT_METHOD_ROUTE,
+                arguments = listOf(
+                    navArgument("eventId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                PaymentMethodScreen(
+                    eventId = eventId,
+                    onBackClick = navigationActions::navigateBack,
+                    onProceedToConfirmation = { id, quantity, paymentMethod ->
+                        navigationActions.navigateToPaymentConfirmation(id, quantity, paymentMethod)
+                    }
+                )
+            }
+
+            composable(route = AppDestinations.PAYMENT_CONFIRMATION_ROUTE,
+                arguments = listOf(
+                    navArgument("eventId") { type = NavType.StringType },
+                    navArgument("quantity") { type = NavType.IntType },
+                    navArgument("paymentMethod") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                val quantity = backStackEntry.arguments?.getInt("quantity") ?: 1
+                val paymentMethod = backStackEntry.arguments?.getString("paymentMethod") ?: "Paypal"
+                PaymentConfirmationScreen(
+                    eventId = eventId,
+                    quantity = quantity,
+                    paymentMethod = paymentMethod,
+                    onBackClick = navigationActions::navigateBack,
+                    onConfirmPayment = { transactionId ->
+                        navigationActions.navigateToPaymentSuccess(transactionId)
+                    }
+                )
+            }
+
+            composable(route = AppDestinations.PAYMENT_SUCCESS_ROUTE,
+                arguments = listOf(
+                    navArgument("transactionId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val transactionId = backStackEntry.arguments?.getString("transactionId") ?: ""
+                PaymentSuccessScreen(
+                    transactionId = transactionId,
+                    onBackToHome = navigationActions::navigateToHome
                 )
             }
 
