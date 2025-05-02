@@ -36,6 +36,7 @@ import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.ProfileS
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.EditPersonalInfoScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.EditAccountScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.profile.SelectLanguageScreen
+import com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.details.EventDetailsScreen
 
 /**
  * Navigation routes for the app
@@ -65,6 +66,7 @@ object AppDestinations {
     const val EVENTS_ROUTE = "events"
     const val PROFILE_ROUTE = "profile"
     const val CREATE_EVENT_ROUTE = "create_event"
+    const val EVENT_DETAILS_ROUTE = "event_details/{eventId}"
     
     // Profile routes
     const val EDIT_PERSONAL_INFO_ROUTE = "edit_personal_info"
@@ -98,6 +100,7 @@ interface NavigationActions {
     fun navigateToEvents()
     fun navigateToProfile()
     fun navigateToCreateEvent()
+    fun navigateToEventDetails(eventId: String)
     
     // Profile screens
     fun navigateToEditPersonalInfo()
@@ -117,7 +120,9 @@ class NavigationActionsImpl(
 
     override fun navigateToWelcome() {
         navController.navigate(AppDestinations.WELCOME_ROUTE) {
-            popUpTo(0) { inclusive = true }
+            popUpTo(navController.graph.id) {
+                inclusive = true
+            }
         }
     }
 
@@ -189,6 +194,11 @@ class NavigationActionsImpl(
 
     override fun navigateToCreateEvent() {
         navController.navigate(AppDestinations.CREATE_EVENT_ROUTE)
+    }
+    
+    override fun navigateToEventDetails(eventId: String) {
+        val route = AppDestinations.EVENT_DETAILS_ROUTE.replace("{eventId}", eventId)
+        navController.navigate(route)
     }
     
     // Profile screens
@@ -341,7 +351,7 @@ fun AppNavHost(
                     onNavigateToHome = { navigationActions.navigateToHome() },
                     onNavigateToEvents = { navigationActions.navigateToEvents() },
                     onNavigateToProfile = { navigationActions.navigateToProfile() },
-                    onNavigateToEventDetails = { eventId -> /* Navigate to event details */ },
+                    onNavigateToEventDetails = { eventId -> navigationActions.navigateToEventDetails(eventId) },
                     onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() },
                     onOpenFilter = { showFilterDialog = true }
                 )
@@ -362,7 +372,7 @@ fun AppNavHost(
                     onNavigateToHome = { navigationActions.navigateToHome() },
                     onNavigateToSearch = { navigationActions.navigateToSearch() },
                     onNavigateToProfile = { navigationActions.navigateToProfile() },
-                    onNavigateToEventDetails = { eventId -> /* Navigate to event details */ },
+                    onNavigateToEventDetails = { eventId -> navigationActions.navigateToEventDetails(eventId) },
                     onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() }
                 )
             }
@@ -373,6 +383,18 @@ fun AppNavHost(
                     onEventCreated = { 
                         navigationActions.navigateToEvents()
                     }
+                )
+            }
+
+            composable(route = AppDestinations.EVENT_DETAILS_ROUTE,
+                arguments = listOf(
+                    navArgument("eventId") { type = NavType.StringType }
+                )
+            ) { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                EventDetailsScreen(
+                    eventId = eventId,
+                    onNavigateBack = navigationActions::navigateBack
                 )
             }
 

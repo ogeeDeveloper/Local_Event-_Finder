@@ -57,6 +57,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavItem
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -105,6 +106,11 @@ fun EventsScreen(
     var selectedTabIndex by remember { mutableIntStateOf(3) } // Events tab selected by default
 
     Scaffold(
+        topBar = {
+            SimpleAppBar(
+                title = "My Event"
+            )
+        },
         bottomBar = {
             BottomNavBar(
                 currentTab = selectedTabIndex,
@@ -143,15 +149,6 @@ fun EventsContent(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Title
-        Text(
-            text = "My Event",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-        
         Spacer(modifier = Modifier.height(16.dp))
         
         // Tab selector
