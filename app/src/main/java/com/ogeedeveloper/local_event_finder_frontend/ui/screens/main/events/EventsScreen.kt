@@ -352,6 +352,17 @@ private fun getSampleEvents(): List<Event> {
             isOnline = true,
             price = 100.0,
             category = "Music"
+        ),
+        Event(
+            id = "2free",
+            title = "Community Yoga Session",
+            description = "Join our free community yoga session in the park",
+            organizer = "Yoga Community",
+            startDate = Date(),
+            endDate = Date(System.currentTimeMillis() + 2 * 60 * 60 * 1000), // 2 hours later
+            isOnline = false,
+            price = 0.0, // Free event
+            category = "Wellness"
         )
     )
 }

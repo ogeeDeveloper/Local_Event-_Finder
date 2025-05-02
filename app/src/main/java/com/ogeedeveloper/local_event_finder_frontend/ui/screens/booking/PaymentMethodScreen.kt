@@ -60,6 +60,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.GoogleMapView
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.NumberFormat
@@ -96,10 +97,12 @@ fun PaymentMethodScreen(
         currency = Currency.getInstance(event.currency)
     }
     
+    val isFreeEvent = event.price <= 0
+    
     Scaffold(
         topBar = {
             SimpleAppBar(
-                title = "Payment Method",
+                title = if (isFreeEvent) "Reserve Event" else "Payment Method",
                 onNavigateBack = onBackClick
             )
         },
@@ -160,130 +163,163 @@ fun PaymentMethodScreen(
                     }
                 }
                 
-                Text(
-                    text = formatter.format(event.price),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            
-            Text(
-                text = "Payment Method",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-            
-            // Payment methods
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .selectableGroup()
-            ) {
-                paymentMethods.forEach { paymentMethod ->
-                    PaymentMethodItem(
-                        paymentMethod = paymentMethod,
-                        selected = selectedPaymentMethod == paymentMethod.name,
-                        onSelect = { selectedPaymentMethod = paymentMethod.name }
+                if (!isFreeEvent) {
+                    Text(
+                        text = formatter.format(event.price),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Text(
+                        text = "Free",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
             
-            // Add new card button
-            TextButton(
-                onClick = { /* Navigate to add card screen */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+            // Only show payment methods for paid events
+            if (!isFreeEvent) {
                 Text(
-                    text = "Add New Card",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-            
-            // Voucher
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Text(
-                    text = "Voucher",
+                    text = "Payment Method",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
                 
-                OutlinedCard(
-                    onClick = { /* Navigate to voucher selection */ },
+                // Payment methods
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        .selectableGroup()
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Choose your voucher",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
-                            contentDescription = "Select voucher",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    paymentMethods.forEach { paymentMethod ->
+                        PaymentMethodItem(
+                            paymentMethod = paymentMethod,
+                            selected = selectedPaymentMethod == paymentMethod.name,
+                            onSelect = { selectedPaymentMethod = paymentMethod.name }
                         )
                     }
                 }
-            }
-            
-            // Amount to pay
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                Text(
-                    text = "Amount to pay",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
                 
-                Row(
+                // Add new card button
+                TextButton(
+                    onClick = { /* Navigate to add card screen */ },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Ticket (${event.title})",
-                        style = MaterialTheme.typography.bodyMedium
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
-                    
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add",
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = formatter.format(ticketPrice * quantity),
+                        text = "Add New Card",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium
                     )
                 }
                 
-                if (discount > 0) {
+                // Voucher
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Voucher",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    OutlinedCard(
+                        onClick = { /* Navigate to voucher selection */ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Choose your voucher",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowRight,
+                                contentDescription = "Select voucher",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                
+                // Amount to pay
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Amount to pay",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Ticket (${event.title})",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        
+                        Text(
+                            text = formatter.format(ticketPrice * quantity),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    
+                    if (discount > 0) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Discount",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Text(
+                                text = "-${formatter.format(discount)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                    
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -291,37 +327,71 @@ fun PaymentMethodScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Discount",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "Sub Total",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
                         
                         Text(
-                            text = "-${formatter.format(discount)}",
+                            text = formatter.format(subtotal),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            } else {
+                // For free events, show a simple message
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "This is a free event",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "Simply confirm your reservation to secure your spot.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.Medium
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
                 
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                // Show event location with map
+                Spacer(modifier = Modifier.height(16.dp))
                 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "Sub Total",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                Text(
+                    text = "Event Location",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                event.location?.let { location ->
+                    GoogleMapView(
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        title = location.name
                     )
                     
                     Text(
-                        text = formatter.format(subtotal),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text = location.address,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                 }
             }
@@ -347,7 +417,7 @@ fun PaymentMethodScreen(
                 )
             ) {
                 Text(
-                    text = if (event.price > 0) "Booking Now" else "Reserve Now",
+                    text = if (isFreeEvent) "Reserve Now" else "Booking Now",
                     style = MaterialTheme.typography.titleMedium
                 )
             }

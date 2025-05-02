@@ -50,6 +50,7 @@ import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.GoogleMapView
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.SimpleDateFormat
@@ -302,30 +303,14 @@ fun EventDetailsContent(
                     )
                 }
                 
-                // Map placeholder
-                Card(
+                GoogleMapView(
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    title = location.name,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
-                        .padding(top = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // This would be replaced with a real map in a production app
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Map",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
-                }
+                        .padding(top = 8.dp)
+                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))

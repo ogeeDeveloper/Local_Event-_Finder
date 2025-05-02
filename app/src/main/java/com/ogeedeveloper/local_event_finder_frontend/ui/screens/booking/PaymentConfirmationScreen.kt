@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,6 +52,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.GoogleMapView
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.NumberFormat
@@ -77,18 +79,20 @@ fun PaymentConfirmationScreen(
     
     val ticketPrice = event.price
     val discount = if (quantity > 1) 20.0 else 0.0
-    val voucherAmount = 10.0
-    val taxAmount = 0.10
+    val voucherAmount = if (event.price > 0) 10.0 else 0.0
+    val taxAmount = if (event.price > 0) 0.10 else 0.0
     val totalPayment = (ticketPrice * quantity) - discount - voucherAmount + taxAmount
     
     val formatter = NumberFormat.getCurrencyInstance().apply {
         currency = Currency.getInstance(event.currency)
     }
     
+    val isFreeEvent = event.price <= 0
+    
     Scaffold(
         topBar = {
             SimpleAppBar(
-                title = "Confirmation",
+                title = if (isFreeEvent) "Reservation Confirmation" else "Confirmation",
                 onNavigateBack = onBackClick
             )
         },
@@ -102,40 +106,70 @@ fun PaymentConfirmationScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Transaction ID
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+            // Transaction ID - only show for paid events
+            if (!isFreeEvent) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
                 ) {
-                    Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "Transaction ID",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            
+                            Text(
+                                text = transactionId,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        TextButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(transactionId))
+                            }
+                        ) {
+                            Text("Copy")
+                        }
+                    }
+                }
+            } else {
+                // For free events, show a confirmation message
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text(
-                            text = "Transaction ID",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "Free Event Reservation",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
                         
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
                         Text(
-                            text = transactionId,
+                            text = "You're about to reserve ${quantity} spot${if (quantity > 1) "s" else ""} for this free event.",
                             style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
+                            textAlign = TextAlign.Center
                         )
-                    }
-                    
-                    TextButton(
-                        onClick = {
-                            clipboardManager.setText(AnnotatedString(transactionId))
-                        }
-                    ) {
-                        Text("Copy")
                     }
                 }
             }
@@ -188,106 +222,15 @@ fun PaymentConfirmationScreen(
                         )
                     }
                     
-                    Text(
-                        text = formatter.format(event.price),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            
-            // Payment details
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = "Detail",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Ticket amount
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    if (!isFreeEvent) {
                         Text(
-                            text = "Ticket Amount",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        
-                        Text(
-                            text = "$quantity Ticket",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    // Voucher
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Voucher",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        
-                        Text(
-                            text = formatter.format(voucherAmount),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    // Tax
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Tax",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        
-                        Text(
-                            text = formatter.format(taxAmount),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-                    
-                    // Total payment
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Total Payment",
+                            text = formatter.format(event.price),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        
+                    } else {
                         Text(
-                            text = formatter.format(totalPayment),
+                            text = "Free",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -296,137 +239,372 @@ fun PaymentConfirmationScreen(
                 }
             }
             
-            // Payment method
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
+            // Event location with map for free events
+            if (isFreeEvent) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
                         Text(
-                            text = "Payment Method",
+                            text = "Event Location",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         
-                        TextButton(onClick = { /* Navigate back to payment method */ }) {
-                            Text("Change")
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Payment method icon would go here
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(8.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = paymentMethod.first().toString(),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                style = MaterialTheme.typography.titleMedium
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        event.location?.let { location ->
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = "Location",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                
+                                Text(
+                                    text = location.address,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            GoogleMapView(
+                                latitude = location.latitude,
+                                longitude = location.longitude,
+                                title = location.name
                             )
                         }
+                    }
+                }
+            }
+            
+            // Payment details - only show for paid events
+            if (!isFreeEvent) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Detail",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                         
-                        Column(
-                            modifier = Modifier.padding(start = 12.dp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Ticket amount
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = paymentMethod,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium
+                                text = "Ticket Amount",
+                                style = MaterialTheme.typography.bodyMedium
                             )
                             
                             Text(
-                                text = "email@mail.com",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "$quantity Ticket",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        // Voucher
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Voucher",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Text(
+                                text = formatter.format(voucherAmount),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        // Tax
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Tax",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Text(
+                                text = formatter.format(taxAmount),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                        
+                        // Total payment
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Total Payment",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            
+                            Text(
+                                text = formatter.format(totalPayment),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+            } else {
+                // For free events, show attendee information
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Reservation Details",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Number of attendees
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Number of Attendees",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Text(
+                                text = quantity.toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        // Event date
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Event Date",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Text(
+                                text = formatDate(event.startDate),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        // Event time
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Event Time",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            
+                            Text(
+                                text = formatTime(event.startDate) + " - " + (event.endDate?.let { formatTime(it) } ?: ""),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }
                 }
             }
             
-            // Timer
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+            // Payment method - only show for paid events
+            if (!isFreeEvent) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "Please pay before:",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    
-                    Text(
-                        text = "Friday, 11 November 2021",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "03:30:30",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Payment Method",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            
+                            TextButton(onClick = { /* Navigate back to payment method */ }) {
+                                Text("Change")
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Payment method icon would go here
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = paymentMethod.first().toString(),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            }
+                            
+                            Column(
+                                modifier = Modifier.padding(start = 12.dp)
+                            ) {
+                                Text(
+                                    text = paymentMethod,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                
+                                Text(
+                                    text = "email@mail.com",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                 }
             }
             
-            // Security notice
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Security,
-                    contentDescription = "Security",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                
-                Text(
-                    text = "This transaction are protected and guaranteed according to our ",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                )
-                
-                TextButton(
-                    onClick = { /* Navigate to terms and conditions */ },
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)
+            // Timer - only show for paid events
+            if (!isFreeEvent) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "terms and condition",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Please pay before:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        
+                        Text(
+                            text = "Friday, 11 November 2021",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "03:30:30",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+            
+            // Security notice - only show for paid events
+            if (!isFreeEvent) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = "Security",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
+                    
+                    Text(
+                        text = "This transaction are protected and guaranteed according to our ",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 8.dp)
+                    )
+                    
+                    TextButton(
+                        onClick = { /* Navigate to terms and conditions */ },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(4.dp)
+                    ) {
+                        Text(
+                            text = "terms and condition",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
             
@@ -445,7 +623,7 @@ fun PaymentConfirmationScreen(
                 )
             ) {
                 Text(
-                    text = if (event.price > 0) "Confirm Payment" else "Confirm Reservation",
+                    text = if (isFreeEvent) "Confirm Reservation" else "Confirm Payment",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
@@ -456,6 +634,12 @@ fun PaymentConfirmationScreen(
 // Helper function to format date
 private fun formatDate(date: Date): String {
     val formatter = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault())
+    return formatter.format(date)
+}
+
+// Helper function to format time
+private fun formatTime(date: Date): String {
+    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
     return formatter.format(date)
 }
 
