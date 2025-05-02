@@ -20,6 +20,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Read the Maps API key from gradle.properties
+        val mapsApiKey = project.properties["MAPS_API_KEY"] as? String ?: "API_KEY_NOT_FOUND"
+        
+        // Add the API key as a BuildConfig field
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        
+        // Also add it as a resource for XML files
+        resValue("string", "google_maps_key", mapsApiKey)
     }
 
     buildTypes {
@@ -40,6 +49,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true  // Enable BuildConfig generation
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
@@ -101,4 +111,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+//    Google geo coding API
+    implementation("com.google.android.libraries.places:places:4.2.0")
 }

@@ -46,10 +46,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ogeedeveloper.local_event_finder_frontend.R
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.AddressAutocompleteField
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +63,7 @@ fun LocationTimeStep(
     onStartTimeChange: (String) -> Unit,
     endTime: String,
     onEndTimeChange: (String) -> Unit,
+    onCoordinatesChange: (Double, Double) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     // Date picker state
@@ -84,24 +85,15 @@ fun LocationTimeStep(
         
         Spacer(modifier = Modifier.height(8.dp))
         
-        OutlinedTextField(
+        AddressAutocompleteField(
             value = location,
             onValueChange = onLocationChange,
-            placeholder = { Text("Enter location") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Location",
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
+            onAddressSelected = { address, lat, lng ->
+                onLocationChange(address)
+                onCoordinatesChange(lat, lng)
             },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true
+            placeholder = "Enter location in Jamaica",
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))

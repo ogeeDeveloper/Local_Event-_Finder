@@ -121,7 +121,8 @@ fun CreateEventScreen(
                     startTime = uiState.startTime,
                     onStartTimeChange = viewModel::updateStartTime,
                     endTime = uiState.endTime,
-                    onEndTimeChange = viewModel::updateEndTime
+                    onEndTimeChange = viewModel::updateEndTime,
+                    onCoordinatesChange = viewModel::updateCoordinates
                 )
                 3 -> TicketsSettingsStep(
                     isFreeEvent = uiState.isFreeEvent,

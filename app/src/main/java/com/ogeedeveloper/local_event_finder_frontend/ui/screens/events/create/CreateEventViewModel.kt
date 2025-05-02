@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ogeedeveloper.local_event_finder_frontend.data.location.LocationService
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,7 +57,8 @@ data class CreateEventUiState(
  */
 @HiltViewModel
 class CreateEventViewModel @Inject constructor(
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    private val locationService: LocationService
 ) : ViewModel() {
 
     var uiState by mutableStateOf(CreateEventUiState())
@@ -163,6 +165,16 @@ class CreateEventViewModel @Inject constructor(
     // Step 2: Location & Time
     fun updateLocation(location: String) {
         uiState = uiState.copy(location = location)
+        
+        // Geocode the address to get coordinates
+        if (location.isNotBlank()) {
+            viewModelScope.launch {
+                val coordinates = locationService.geocodeAddress(location)
+                if (coordinates != null) {
+                    updateCoordinates(coordinates.first, coordinates.second)
+                }
+            }
+        }
     }
     
     fun updateCoordinates(latitude: Double, longitude: Double) {
@@ -294,6 +306,24 @@ class CreateEventViewModel @Inject constructor(
                     
                     // Format date and time
                     val dateTime = formatDateTime()
+                    
+                    // Ensure we have valid coordinates
+                    if (!locationService.areCoordinatesValid(uiState.latitude, uiState.longitude)) {
+                        // Try to geocode the address if coordinates are not valid
+                        val coordinates = locationService.geocodeAddress(uiState.location)
+                        if (coordinates != null) {
+                            uiState = uiState.copy(
+                                latitude = coordinates.first,
+                                longitude = coordinates.second
+                            )
+                        } else {
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                errorMessage = "Could not determine location coordinates. Please enter a valid address."
+                            )
+                            return@launch
+                        }
+                    }
                     
                     // Call repository to create event
                     val result = eventRepository.createEvent(

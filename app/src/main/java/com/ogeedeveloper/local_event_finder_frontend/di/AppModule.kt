@@ -8,6 +8,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.gson.Gson
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.data.cache.CategoryCache
+import com.ogeedeveloper.local_event_finder_frontend.data.location.LocationService
 import com.ogeedeveloper.local_event_finder_frontend.data.network.ApiConfig
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthInterceptor
@@ -201,5 +202,13 @@ object AppModule {
         categoryCache: CategoryCache
     ): EventRepository {
         return EventRepositoryImpl(eventApi, categoryCache)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLocationService(
+        @ApplicationContext context: Context
+    ): LocationService {
+        return LocationService(context)
     }
 }

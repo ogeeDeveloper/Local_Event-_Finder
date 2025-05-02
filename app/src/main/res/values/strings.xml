@@ -23,4 +23,7 @@
     <string name="events_route">/events</string>
     <string name="profile_route">/profile</string>
     <string name="default_web_client_id">default_web_client_id</string>
+
+    <!-- Google Maps API key (replace with your actual API key) -->
+    <string name="google_maps_key">YOUR_GOOGLE_MAPS_API_KEY</string>
 </resources>
