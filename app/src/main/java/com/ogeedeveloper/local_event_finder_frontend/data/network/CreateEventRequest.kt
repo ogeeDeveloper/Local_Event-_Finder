@@ -13,5 +13,5 @@ data class CreateEventRequest(
     val dateTime: String,
     val price: Double,
     val coverImage: String,
-    val totalSeats: Int
+    val totalSeats: Int? = null
 )

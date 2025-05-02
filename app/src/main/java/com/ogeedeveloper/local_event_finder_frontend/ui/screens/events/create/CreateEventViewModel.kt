@@ -251,8 +251,9 @@ class CreateEventViewModel @Inject constructor(
             uiState = uiState.copy(errorMessage = "Please enter a valid price")
             return false
         }
-        if (uiState.capacity.isBlank() || uiState.capacity.toIntOrNull() == null) {
-            uiState = uiState.copy(errorMessage = "Please enter a valid capacity")
+        // Allow blank capacity (unlimited) or valid integer
+        if (uiState.capacity.isNotBlank() && uiState.capacity.toIntOrNull() == null) {
+            uiState = uiState.copy(errorMessage = "Please enter a valid capacity or leave blank for unlimited")
             return false
         }
         return true
@@ -285,8 +286,8 @@ class CreateEventViewModel @Inject constructor(
                     // Convert price to double
                     val price = if (uiState.isFreeEvent) 0.0 else uiState.price.toDoubleOrNull() ?: 0.0
                     
-                    // Convert capacity to int
-                    val capacity = uiState.capacity.toIntOrNull() ?: 0
+                    // Convert capacity to int, null if blank (unlimited)
+                    val capacity = if (uiState.capacity.isBlank()) null else uiState.capacity.toIntOrNull()
                     
                     // Get image URL (in a real app, you would upload the image first and get a URL)
                     val imageUrl = uiState.imageUri?.toString() ?: ""

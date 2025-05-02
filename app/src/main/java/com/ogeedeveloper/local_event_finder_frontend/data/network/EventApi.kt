@@ -47,7 +47,7 @@ class EventApi @Inject constructor(
         dateTime: String,
         price: Double,
         coverImage: String,
-        totalSeats: Int
+        totalSeats: Int?
     ): String {
         val request = CreateEventRequest(
             title = title,

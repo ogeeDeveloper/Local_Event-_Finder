@@ -1,6 +1,7 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
 import android.text.format.DateUtils.formatDateTime
+import com.ogeedeveloper.local_event_finder_frontend.data.cache.CategoryCache
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
@@ -19,7 +20,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class EventRepositoryImpl @Inject constructor(
-    private val eventApi: EventApi
+    private val eventApi: EventApi,
+    private val categoryCache: CategoryCache
 ) : EventRepository {
 
     // Mock data for events
@@ -157,7 +159,7 @@ class EventRepositoryImpl @Inject constructor(
         dateTime: String,
         price: Double,
         coverImage: String?,
-        totalSeats: Int
+        totalSeats: Int?
     ): Result<String> {
         return try {
             // Call the API to create the event
@@ -180,8 +182,32 @@ class EventRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getCategories(): Result<List<Category>> {
+        // First try to get categories from cache
+        val cachedCategories = categoryCache.getCategories()
+        
+        // If cache is valid, return cached categories
+        if (cachedCategories != null) {
+            return Result.success(cachedCategories)
+        }
+        
+        // Otherwise fetch from API and update cache
         return try {
             val categories = eventApi.getCategories()
+            // Store in cache for future use
+            categoryCache.storeCategories(categories)
+            Result.success(categories)
+        } catch (e: Exception) {
+            // Fallback to default categories if API call fails
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun refreshCategories(): Result<List<Category>> {
+        return try {
+            // Fetch fresh data from API, bypassing cache
+            val categories = eventApi.getCategories()
+            // Update cache with new data
+            categoryCache.storeCategories(categories)
             Result.success(categories)
         } catch (e: Exception) {
             // Fallback to default categories if API call fails

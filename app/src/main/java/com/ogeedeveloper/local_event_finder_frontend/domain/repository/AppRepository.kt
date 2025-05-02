@@ -38,9 +38,15 @@ interface EventRepository {
         dateTime: String,
         price: Double,
         coverImage: String?,
-        totalSeats: Int
+        totalSeats: Int?
     ): Result<String>
     suspend fun getCategories(): Result<List<Category>>
+    
+    /**
+     * Force refresh categories from the API, ignoring cache
+     * @return Result containing the refreshed categories or an error
+     */
+    suspend fun refreshCategories(): Result<List<Category>>
 }
 
 // Basic domain model classes that would be defined in their own files

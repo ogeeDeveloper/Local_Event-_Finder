@@ -7,8 +7,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.gson.Gson
 import com.ogeedeveloper.local_event_finder_frontend.R
+import com.ogeedeveloper.local_event_finder_frontend.data.cache.CategoryCache
 import com.ogeedeveloper.local_event_finder_frontend.data.network.ApiConfig
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
+import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthInterceptor
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthService
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.data.network.UserApi
@@ -88,13 +90,22 @@ object AppModule {
     
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideAuthInterceptor(
+        authLocalDataSource: AuthLocalDataSource
+    ): AuthInterceptor {
+        return AuthInterceptor(authLocalDataSource)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(authInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -179,9 +190,16 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideCategoryCache(): CategoryCache {
+        return CategoryCache()
+    }
+
+    @Provides
+    @Singleton
     fun provideEventRepository(
-        eventApi: EventApi
+        eventApi: EventApi,
+        categoryCache: CategoryCache
     ): EventRepository {
-        return EventRepositoryImpl(eventApi)
+        return EventRepositoryImpl(eventApi, categoryCache)
     }
 }

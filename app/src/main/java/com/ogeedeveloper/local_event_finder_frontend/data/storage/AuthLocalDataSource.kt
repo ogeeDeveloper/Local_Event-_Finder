@@ -63,4 +63,12 @@ class AuthLocalDataSource @Inject constructor(
     fun clearAuthSession() {
         sharedPreferences.edit { remove(KEY_AUTH_SESSION) }
     }
+    
+    /**
+     * Get the authentication token from the stored auth session
+     * @return The access token or null if no session exists
+     */
+    fun getAuthToken(): String? {
+        return getAuthSession()?.accessToken
+    }
 }
