@@ -82,4 +82,13 @@ class EventApi @Inject constructor(
             throw Exception("Failed to fetch categories: ${response.errorBody()?.string()}")
         }
     }
+    
+    suspend fun getEventsByCategory(category: String): List<Event> {
+        val response = eventService.getEventsByCategory(category)
+        if (response.isSuccessful) {
+            return response.body() ?: emptyList()
+        } else {
+            throw Exception("Failed to fetch events by category: ${response.errorBody()?.string()}")
+        }
+    }
 }

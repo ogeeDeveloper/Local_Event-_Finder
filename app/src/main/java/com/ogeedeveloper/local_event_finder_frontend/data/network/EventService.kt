@@ -29,8 +29,8 @@ interface EventService {
         @Query("radius") radius: Int
     ): Response<List<Event>>
     
-    @GET("events/category/{category}")
-    suspend fun getEventsByCategory(@Path("category") category: String): Response<List<Event>>
+    @GET("events")
+    suspend fun getEventsByCategory(@Query("category") category: String): Response<List<Event>>
     
     @GET("events/categories")
     suspend fun getCategories(): Response<List<Category>>

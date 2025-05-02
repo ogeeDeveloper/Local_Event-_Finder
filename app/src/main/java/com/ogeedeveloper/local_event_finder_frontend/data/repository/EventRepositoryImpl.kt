@@ -1,6 +1,7 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.repository
 
 import android.text.format.DateUtils.formatDateTime
+import android.util.Log
 import com.ogeedeveloper.local_event_finder_frontend.data.cache.CategoryCache
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
@@ -24,109 +25,72 @@ class EventRepositoryImpl @Inject constructor(
     private val categoryCache: CategoryCache
 ) : EventRepository {
 
-    // Mock data for events
-    private val mockEvents = listOf(
-        Event(
-            id = "1",
-            title = "Shawn Mendes The Virtual Tour in Germany 2021",
-            description = "Join Shawn Mendes for an exclusive virtual concert experience",
-            startDate = Date(),
-            endDate = Date(),
-            location = null,
-            isOnline = true,
-            joinUrl = "https://example.com/join",
-            imageUrl = null,
-            price = 100.0,
-            originalPrice = 150.0,
-            currency = "USD",
-            category = "Music",
-            tags = listOf("Concert", "Music", "Virtual")
-        ),
-        Event(
-            id = "2",
-            title = "Business Leadership Conference",
-            description = "Learn from top industry leaders",
-            startDate = Date(),
-            endDate = Date(),
-            location = Location(
-                id = UUID.randomUUID().toString(),
-                name = "Convention Center",
-                address = "123 Main St",
-                latitude = 40.7128,
-                longitude = -74.0060
-            ),
-            isOnline = false,
-            joinUrl = null,
-            imageUrl = null,
-            price = 250.0,
-            originalPrice = null,
-            currency = "USD",
-            category = "Business",
-            tags = listOf("Conference", "Business", "Leadership")
-        ),
-        Event(
-            id = "3",
-            title = "Food & Wine Festival",
-            description = "Taste culinary delights from award-winning chefs",
-            startDate = Date(),
-            endDate = Date(),
-            location = Location(
-                id = UUID.randomUUID().toString(),
-                name = "Downtown Park",
-                address = "456 Park Ave",
-                latitude = 40.7580,
-                longitude = -73.9855
-            ),
-            isOnline = false,
-            joinUrl = null,
-            imageUrl = null,
-            price = 75.0,
-            originalPrice = null,
-            currency = "USD",
-            category = "Food",
-            tags = listOf("Festival", "Food", "Wine")
-        )
-    )
-
     override suspend fun getEventsByCategory(category: String): Flow<List<Event>> {
         return flow {
-            delay(800) // Simulate network delay
-            if (category.equals("All", ignoreCase = true)) {
-                emit(mockEvents)
-            } else {
-                emit(mockEvents.filter {
-                    it.category.equals(category, ignoreCase = true)
-                })
+            try {
+                val events = if (category.equals("all", ignoreCase = true)) {
+                    eventApi.getEvents()
+                } else {
+                    eventApi.getEventsByCategory(category)
+                }
+                emit(events)
+            } catch (e: Exception) {
+                // Log the error
+                Log.e("EventRepository", "Error fetching events by category: ${e.message}")
+                throw e
             }
         }
     }
 
     override suspend fun getEventsByLocation(lat: Double, lng: Double, radius: Int): Flow<List<Event>> {
         return flow {
-            delay(1000)
-            // In a real app, this would filter based on location coordinates
-            emit(mockEvents)
+            try {
+                // For now, we'll filter on the client side since there's no specific endpoint
+                val events = eventApi.getEvents().filter { event ->
+                    // Simple distance calculation (not accurate for long distances)
+                    val latDiff = event.location?.latitude?.minus(lat) ?: 0.0
+                    val lngDiff = event.location?.longitude?.minus(lng) ?: 0.0
+                    val distanceSquared = latDiff * latDiff + lngDiff * lngDiff
+                    distanceSquared <= radius * radius
+                }
+                emit(events)
+            } catch (e: Exception) {
+                Log.e("EventRepository", "Error fetching events by location: ${e.message}")
+                throw e
+            }
         }
     }
 
     override suspend fun getEventDetails(eventId: String): Flow<Event?> {
         return flow {
-            delay(800)
-            emit(mockEvents.find { it.id == eventId })
+            try {
+                val event = eventApi.getEventById(eventId)
+                emit(event)
+            } catch (e: Exception) {
+                Log.e("EventRepository", "Error fetching event by ID: ${e.message}")
+                emit(null) // Emit null on error
+            }
         }
     }
 
     override suspend fun searchEvents(query: String): Flow<List<Event>> {
         return flow {
-            delay(1000)
-            if (query.isBlank()) {
-                emit(mockEvents)
-            } else {
-                emit(mockEvents.filter {
-                    it.title.contains(query, ignoreCase = true) ||
-                            it.description.contains(query, ignoreCase = true) ||
-                            it.category.contains(query, ignoreCase = true)
-                })
+            try {
+                // If query is blank, just get all events
+                val events = if (query.isBlank()) {
+                    eventApi.getEvents()
+                } else {
+                    // For now, we'll filter on the client side since there's no specific search endpoint
+                    eventApi.getEvents().filter {
+                        it.title.contains(query, ignoreCase = true) ||
+                        it.description.contains(query, ignoreCase = true) ||
+                        it.category.contains(query, ignoreCase = true)
+                    }
+                }
+                emit(events)
+            } catch (e: Exception) {
+                Log.e("EventRepository", "Error searching events: ${e.message}")
+                throw e
             }
         }
     }
@@ -145,7 +109,7 @@ class EventRepositoryImpl @Inject constructor(
         return flow {
             delay(800)
             // For demo, just return a subset of events
-            emit(mockEvents.take(2))
+            emit(eventApi.getEvents().take(2))
         }
     }
 

@@ -6,6 +6,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.data.cache.CategoryCache
 import com.ogeedeveloper.local_event_finder_frontend.data.location.LocationService
@@ -116,10 +117,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient, apiConfig: ApiConfig): Retrofit {
+        val gson = GsonBuilder()
+            .setDateFormat("yyyy-MM-dd HH:mm:ss") // Match the backend date format
+            .create()
+            
         return Retrofit.Builder()
             .baseUrl(apiConfig.getBaseUrl())
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
     
