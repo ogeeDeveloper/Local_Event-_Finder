@@ -7,6 +7,9 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.data.cache.CategoryCache
 import com.ogeedeveloper.local_event_finder_frontend.data.location.LocationService
@@ -15,12 +18,15 @@ import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthApi
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthInterceptor
 import com.ogeedeveloper.local_event_finder_frontend.data.network.AuthService
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
+import com.ogeedeveloper.local_event_finder_frontend.data.network.EventDeserializer
 import com.ogeedeveloper.local_event_finder_frontend.data.network.UserApi
 import com.ogeedeveloper.local_event_finder_frontend.data.repository.AuthRepositoryImpl
 import com.ogeedeveloper.local_event_finder_frontend.data.repository.EventRepositoryImpl
 import com.ogeedeveloper.local_event_finder_frontend.data.repository.UserRepositoryImpl
 import com.ogeedeveloper.local_event_finder_frontend.data.storage.AuthLocalDataSource
 import com.ogeedeveloper.local_event_finder_frontend.data.storage.UserPreferences
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.AuthRepository
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.UserRepository
@@ -119,6 +125,7 @@ object AppModule {
     fun provideRetrofit(okHttpClient: OkHttpClient, apiConfig: ApiConfig): Retrofit {
         val gson = GsonBuilder()
             .setDateFormat("yyyy-MM-dd HH:mm:ss") // Match the backend date format
+            .registerTypeAdapter(Event::class.java, EventDeserializer())
             .create()
             
         return Retrofit.Builder()

@@ -24,12 +24,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +52,7 @@ import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.EmptyState
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.GoogleMapView
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
@@ -65,8 +68,7 @@ fun EventDetailsScreen(
     modifier: Modifier = Modifier,
     viewModel: EventDetailsViewModel = hiltViewModel()
 ) {
-    // In a real app, this would come from the ViewModel
-    val event = getSampleEvent(eventId)
+    val uiState by viewModel.uiState.collectAsState()
     
     Scaffold(
         topBar = {
@@ -77,11 +79,38 @@ fun EventDetailsScreen(
         },
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
-        EventDetailsContent(
-            event = event,
-            onBookEvent = onBookEvent,
-            modifier = Modifier.padding(paddingValues)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            when (uiState) {
+                is EventDetailsUiState.Loading -> {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                is EventDetailsUiState.Error -> {
+                    val errorState = uiState as EventDetailsUiState.Error
+                    EmptyState(
+                        title = "Oops!",
+                        message = errorState.message,
+                        imageResId = R.drawable.ic_empty_events,
+                        actionLabel = "Try Again",
+                        onActionClick = { viewModel.loadEvent(eventId) }
+                    )
+                }
+                is EventDetailsUiState.Success -> {
+                    val event = (uiState as EventDetailsUiState.Success).event
+                    EventDetailsContent(
+                        event = event,
+                        onBookEvent = onBookEvent,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
     }
 }
 
