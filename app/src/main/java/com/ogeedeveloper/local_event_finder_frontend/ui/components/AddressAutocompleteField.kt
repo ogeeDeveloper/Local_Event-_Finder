@@ -3,6 +3,7 @@ package com.ogeedeveloper.local_event_finder_frontend.ui.components
 import android.content.Context
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -33,6 +34,8 @@ import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRe
 import com.google.android.libraries.places.api.net.PlacesClient
 import com.ogeedeveloper.local_event_finder_frontend.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 /**
@@ -50,25 +53,59 @@ fun AddressAutocompleteField(
     val context = LocalContext.current
     var predictions by remember { mutableStateOf<List<AutocompletePrediction>>(emptyList()) }
     var showSuggestions by remember { mutableStateOf(false) }
-    var placesClient: PlacesClient? = null
+    var placesClient by remember { mutableStateOf<PlacesClient?>(null) }
     
     // Initialize Places API if not already initialized
     LaunchedEffect(Unit) {
-        if (!Places.isInitialized()) {
-            // Use the API key from BuildConfig instead of strings.xml
-            Places.initialize(context, BuildConfig.MAPS_API_KEY)
+        try {
+            if (!Places.isInitialized()) {
+                // Use the API key from BuildConfig
+                Places.initialize(context, BuildConfig.MAPS_API_KEY)
+                android.util.Log.d("AddressAutocomplete", "Places API initialized with key")
+            }
+            placesClient = Places.createClient(context)
+        } catch (e: Exception) {
+            android.util.Log.e("AddressAutocomplete", "Error initializing Places API: ${e.message}")
+            e.printStackTrace()
         }
-        placesClient = Places.createClient(context)
     }
     
     // Fetch predictions when value changes
     LaunchedEffect(value) {
-        if (value.length >= 3) {
-            predictions = fetchPredictions(context, value, placesClient)
-            showSuggestions = predictions.isNotEmpty()
-        } else {
-            predictions = emptyList()
-            showSuggestions = false
+        try {
+            if (value.length >= 3 && placesClient != null) {
+                // Create a new token for each session to improve results
+                val token = AutocompleteSessionToken.newInstance()
+                
+                val request = FindAutocompletePredictionsRequest.builder()
+                    .setCountries("JM")  // Restrict to Jamaica
+                    .setTypeFilter(TypeFilter.ADDRESS)
+                    .setSessionToken(token)
+                    .setQuery(value)
+                    .build()
+                
+                withContext(Dispatchers.IO) {
+                    try {
+                        val response = placesClient!!.findAutocompletePredictions(request).await()
+                        val newPredictions = response.autocompletePredictions
+                        
+                        withContext(Dispatchers.Main) {
+                            predictions = newPredictions
+                            showSuggestions = newPredictions.isNotEmpty()
+                            android.util.Log.d("AddressAutocomplete", "Fetched ${newPredictions.size} predictions for query: $value")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("AddressAutocomplete", "Error in API call: ${e.message}")
+                        e.printStackTrace()
+                    }
+                }
+            } else {
+                predictions = emptyList()
+                showSuggestions = false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AddressAutocomplete", "Error fetching predictions: ${e.message}")
+            e.printStackTrace()
         }
     }
     
@@ -86,28 +123,58 @@ fun AddressAutocompleteField(
         )
         
         // Suggestions dropdown
-        if (showSuggestions) {
+        if (showSuggestions && predictions.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)  
                 ) {
                     items(predictions) { prediction ->
                         TextButton(
                             onClick = {
-                                // When a suggestion is clicked, fetch the place details
-                                fetchPlaceDetails(
-                                    context = context,
-                                    placeId = prediction.placeId,
-                                    placesClient = placesClient,
-                                    onPlaceSelected = { address, lat, lng ->
-                                        onValueChange(address)
-                                        onAddressSelected(address, lat, lng)
+                                val primaryText = prediction.getPrimaryText(null).toString()
+                                val secondaryText = prediction.getSecondaryText(null).toString()
+                                val fullAddress = "$primaryText, $secondaryText"
+                                
+                                android.util.Log.d("AddressAutocomplete", "Clicked on prediction: $fullAddress")
+                                
+                                // Set the value immediately for better UX
+                                onValueChange(fullAddress)
+                                
+                                // Launch a coroutine to fetch place details
+                                kotlinx.coroutines.MainScope().launch {
+                                    try {
+                                        // Get place details
+                                        val placeFields = listOf(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG)
+                                        val request = FetchPlaceRequest.newInstance(prediction.placeId, placeFields)
+                                        
+                                        val response = withContext(Dispatchers.IO) {
+                                            placesClient?.fetchPlace(request)?.await()
+                                        }
+                                        
+                                        if (response != null) {
+                                            val place = response.place
+                                            val address = place.address ?: fullAddress
+                                            val latLng = place.latLng
+                                            
+                                            if (latLng != null) {
+                                                android.util.Log.d("AddressAutocomplete", "Selected address: $address at ${latLng.latitude}, ${latLng.longitude}")
+                                                onValueChange(address)
+                                                onAddressSelected(address, latLng.latitude, latLng.longitude)
+                                            }
+                                        }
+                                        
+                                        // Hide suggestions after selection
                                         showSuggestions = false
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("AddressAutocomplete", "Error selecting address: ${e.message}")
+                                        e.printStackTrace()
                                     }
-                                )
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -118,7 +185,7 @@ fun AddressAutocompleteField(
                             ) {
                                 Text(
                                     text = prediction.getPrimaryText(null).toString(),
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
@@ -136,55 +203,33 @@ fun AddressAutocompleteField(
 }
 
 /**
- * Fetch address predictions from Google Places API
+ * A simple text field for address input
  */
-private suspend fun fetchPredictions(
-    context: Context,
-    query: String,
-    placesClient: PlacesClient?
-): List<AutocompletePrediction> = withContext(Dispatchers.IO) {
-    if (placesClient == null || query.length < 3) return@withContext emptyList()
-    
-    try {
-        val token = AutocompleteSessionToken.newInstance()
-        val request = FindAutocompletePredictionsRequest.builder()
-            .setCountries("JM")  // Restrict to Jamaica
-            .setTypeFilter(TypeFilter.ADDRESS)
-            .setSessionToken(token)
-            .setQuery(query)
-            .build()
-            
-        val response = placesClient.findAutocompletePredictions(request).await()
-        return@withContext response.autocompletePredictions
-    } catch (e: Exception) {
-        e.printStackTrace()
-        return@withContext emptyList()
-    }
-}
-
-/**
- * Fetch place details from Google Places API
- */
-private fun fetchPlaceDetails(
-    context: Context,
-    placeId: String,
-    placesClient: PlacesClient?,
-    onPlaceSelected: (String, Double, Double) -> Unit
+@Composable
+private fun AppTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier
 ) {
-    if (placesClient == null) return
-    
-    val placeFields = listOf(Place.Field.ID, Place.Field.NAME, Place.Field.ADDRESS, Place.Field.LAT_LNG)
-    val request = FetchPlaceRequest.newInstance(placeId, placeFields)
-    
-    placesClient.fetchPlace(request).addOnSuccessListener { response ->
-        val place = response.place
-        val address = place.address ?: ""
-        val latLng = place.latLng
-        
-        if (latLng != null) {
-            onPlaceSelected(address, latLng.latitude, latLng.longitude)
-        }
-    }.addOnFailureListener { exception ->
-        exception.printStackTrace()
-    }
+    androidx.compose.material3.OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(placeholder) },
+        leadingIcon = {
+            Icon(
+                imageVector = leadingIcon,
+                contentDescription = "Location",
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        },
+        modifier = modifier,
+        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        ),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        singleLine = true
+    )
 }

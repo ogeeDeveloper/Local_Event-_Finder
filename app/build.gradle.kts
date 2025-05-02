@@ -71,7 +71,11 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("com.github.skydoves:landscapist-glide:2.4.7")
+    
+    // Material Design components
+    implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
+    
     implementation("androidx.navigation:navigation-compose:2.8.9")
     implementation("com.google.dagger:hilt-android:2.51.1")
     implementation("androidx.datastore:datastore-preferences:1.1.4")
@@ -84,6 +88,9 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:2.11.4")
     implementation("com.google.android.gms:play-services-maps:19.2.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    
+    // Google Places API - use a stable version
+    implementation("com.google.android.libraries.places:places:3.2.0")
     
     // Firebase Authentication
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
@@ -111,7 +118,4 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-
-//    Google geo coding API
-    implementation("com.google.android.libraries.places:places:4.2.0")
 }

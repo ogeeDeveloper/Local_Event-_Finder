@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <!-- Use the standard Android NoActionBar theme for Compose apps -->
     <style name="Theme.Localeventfinderfrontend" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

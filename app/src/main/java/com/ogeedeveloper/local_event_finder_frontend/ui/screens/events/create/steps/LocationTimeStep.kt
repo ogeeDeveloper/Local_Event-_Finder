@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -45,11 +46,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AddressAutocompleteField
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +83,9 @@ fun LocationTimeStep(
     var showEndTimePicker by remember { mutableStateOf(false) }
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.US) }
     
+    // Location coordinates state
+    var coordinates by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    
     Column(modifier = modifier.fillMaxWidth()) {
         // Event Location
         Text(
@@ -91,6 +102,7 @@ fun LocationTimeStep(
             onAddressSelected = { address, lat, lng ->
                 onLocationChange(address)
                 onCoordinatesChange(lat, lng)
+                coordinates = Pair(lat, lng)
             },
             placeholder = "Enter location in Jamaica",
             modifier = Modifier.fillMaxWidth()
@@ -99,7 +111,7 @@ fun LocationTimeStep(
         Spacer(modifier = Modifier.height(16.dp))
         
         // Map Preview
-        MapPreviewBox()
+        MapPreviewBox(coordinates = coordinates)
         
         Spacer(modifier = Modifier.height(16.dp))
         
@@ -304,6 +316,7 @@ fun LocationTimeStep(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapPreviewBox(
+    coordinates: Pair<Double, Double>?,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -319,27 +332,46 @@ fun MapPreviewBox(
             .background(Color.White),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_map_placeholder),
-                contentDescription = "Map preview",
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                modifier = Modifier.padding(8.dp)
-            )
+        if (coordinates != null) {
+            // Display actual map with marker when coordinates are available
+            val jamaicaLocation = LatLng(coordinates.first, coordinates.second)
+            val cameraPositionState = rememberCameraPositionState {
+                position = CameraPosition.fromLatLngZoom(jamaicaLocation, 15f)
+            }
             
-            Text(
-                text = "Map preview",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            
-            Text(
-                text = "Pin your exact location",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState
+            ) {
+                Marker(
+                    state = MarkerState(position = jamaicaLocation),
+                    title = "Selected Location"
+                )
+            }
+        } else {
+            // Display placeholder when no coordinates are selected
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_map_placeholder),
+                    contentDescription = "Map preview",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(8.dp)
+                )
+                
+                Text(
+                    text = "Map preview",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                
+                Text(
+                    text = "Pin your exact location",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }
