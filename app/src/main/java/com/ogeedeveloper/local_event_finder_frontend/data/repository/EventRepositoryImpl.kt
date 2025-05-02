@@ -157,6 +157,7 @@ class EventRepositoryImpl @Inject constructor(
         latitude: Double,
         longitude: Double,
         dateTime: String,
+        endTime: String?,
         price: Double,
         coverImage: String?,
         totalSeats: Int?
@@ -171,6 +172,7 @@ class EventRepositoryImpl @Inject constructor(
                 longitude = longitude,
                 latitude = latitude,
                 dateTime = dateTime,
+                endTime = endTime,
                 price = price,
                 coverImage = coverImage ?: "",
                 totalSeats = totalSeats

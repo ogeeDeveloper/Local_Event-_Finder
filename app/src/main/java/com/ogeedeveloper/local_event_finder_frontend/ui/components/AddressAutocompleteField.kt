@@ -145,6 +145,9 @@ fun AddressAutocompleteField(
                                 // Set the value immediately for better UX
                                 onValueChange(fullAddress)
                                 
+                                // Hide suggestions immediately
+                                showSuggestions = false
+                                
                                 // Launch a coroutine to fetch place details
                                 kotlinx.coroutines.MainScope().launch {
                                     try {
@@ -167,9 +170,6 @@ fun AddressAutocompleteField(
                                                 onAddressSelected(address, latLng.latitude, latLng.longitude)
                                             }
                                         }
-                                        
-                                        // Hide suggestions after selection
-                                        showSuggestions = false
                                     } catch (e: Exception) {
                                         android.util.Log.e("AddressAutocomplete", "Error selecting address: ${e.message}")
                                         e.printStackTrace()

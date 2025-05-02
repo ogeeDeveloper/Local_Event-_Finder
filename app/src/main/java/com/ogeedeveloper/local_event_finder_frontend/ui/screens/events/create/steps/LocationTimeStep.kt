@@ -71,14 +71,14 @@ fun LocationTimeStep(
     onStartTimeChange: (String) -> Unit,
     endTime: String,
     onEndTimeChange: (String) -> Unit,
-    onCoordinatesChange: (Double, Double) -> Unit = { _, _ -> },
+    onCoordinatesChange: (Double, Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Date picker state
     var showDatePicker by remember { mutableStateOf(false) }
     val dateFormatter = remember { SimpleDateFormat("MM/dd/yyyy", Locale.US) }
     
-    // Time picker states
+    // State for time pickers
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.US) }
@@ -208,13 +208,6 @@ fun LocationTimeStep(
                     value = startTime,
                     onValueChange = { /* Handled by time picker */ },
                     placeholder = { Text("--:-- --") },
-//                    leadingIcon = {
-//                        Icon(
-//                            imageVector = Icons.Default.Schedule,
-//                            contentDescription = "Start time",
-//                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-//                        )
-//                    },
                     trailingIcon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_time_picker),
@@ -234,20 +227,6 @@ fun LocationTimeStep(
                     singleLine = true,
                     readOnly = true
                 )
-                
-                // Start Time Picker Dialog
-                if (showStartTimePicker) {
-                    TimePickerDialog(
-                        onDismiss = { showStartTimePicker = false },
-                        onConfirm = { hour, minute ->
-                            val calendar = Calendar.getInstance()
-                            calendar.set(Calendar.HOUR_OF_DAY, hour)
-                            calendar.set(Calendar.MINUTE, minute)
-                            onStartTimeChange(timeFormatter.format(calendar.time))
-                            showStartTimePicker = false
-                        }
-                    )
-                }
             }
             
             Spacer(modifier = Modifier.width(16.dp))
@@ -268,17 +247,10 @@ fun LocationTimeStep(
                     value = endTime,
                     onValueChange = { /* Handled by time picker */ },
                     placeholder = { Text("--:-- --") },
-//                    leadingIcon = {
-//                        Icon(
-//                            imageVector = Icons.Default.Schedule,
-//                            contentDescription = "End time",
-//                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-//                        )
-//                    },
                     trailingIcon = {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_time_picker),
-                            contentDescription = "Pick time",
+                            contentDescription = "Pick end time",
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             modifier = Modifier.clickable { showEndTimePicker = true }
                         )
@@ -294,21 +266,35 @@ fun LocationTimeStep(
                     singleLine = true,
                     readOnly = true
                 )
-                
-                // End Time Picker Dialog
-                if (showEndTimePicker) {
-                    TimePickerDialog(
-                        onDismiss = { showEndTimePicker = false },
-                        onConfirm = { hour, minute ->
-                            val calendar = Calendar.getInstance()
-                            calendar.set(Calendar.HOUR_OF_DAY, hour)
-                            calendar.set(Calendar.MINUTE, minute)
-                            onEndTimeChange(timeFormatter.format(calendar.time))
-                            showEndTimePicker = false
-                        }
-                    )
-                }
             }
+        }
+        
+        // Start Time Picker Dialog
+        if (showStartTimePicker) {
+            TimePickerDialog(
+                onDismiss = { showStartTimePicker = false },
+                onConfirm = { hour, minute ->
+                    val calendar = Calendar.getInstance()
+                    calendar.set(Calendar.HOUR_OF_DAY, hour)
+                    calendar.set(Calendar.MINUTE, minute)
+                    onStartTimeChange(timeFormatter.format(calendar.time))
+                    showStartTimePicker = false
+                }
+            )
+        }
+        
+        // End Time Picker Dialog
+        if (showEndTimePicker) {
+            TimePickerDialog(
+                onDismiss = { showEndTimePicker = false },
+                onConfirm = { hour, minute ->
+                    val calendar = Calendar.getInstance()
+                    calendar.set(Calendar.HOUR_OF_DAY, hour)
+                    calendar.set(Calendar.MINUTE, minute)
+                    onEndTimeChange(timeFormatter.format(calendar.time))
+                    showEndTimePicker = false
+                }
+            )
         }
     }
 }
@@ -419,7 +405,8 @@ fun LocationTimeStepPreview() {
                 startTime = "",
                 onStartTimeChange = {},
                 endTime = "",
-                onEndTimeChange = {}
+                onEndTimeChange = {},
+                onCoordinatesChange = { _, _ -> }
             )
         }
     }

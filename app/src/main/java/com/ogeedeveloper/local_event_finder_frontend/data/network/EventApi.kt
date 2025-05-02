@@ -45,13 +45,12 @@ class EventApi @Inject constructor(
         longitude: Double,
         latitude: Double,
         dateTime: String,
+        endTime: String? = null,
         price: Double,
         coverImage: String,
         totalSeats: Int?
     ): String {
-        // Format the location point for MySQL spatial data
-        val locationPoint = "POINT($longitude $latitude)"
-        
+        // Create request with direct parameters
         val request = CreateEventRequest(
             title = title,
             description = description,
@@ -59,9 +58,9 @@ class EventApi @Inject constructor(
             locationName = locationName,
             longitude = longitude,
             latitude = latitude,
-            locationPoint = locationPoint,
-            srid = 4326,  // WGS84 coordinate system
+            // Don't set locationPoint - let the backend handle it
             dateTime = dateTime,
+            endTime = endTime,
             price = price,
             coverImage = coverImage,
             totalSeats = totalSeats

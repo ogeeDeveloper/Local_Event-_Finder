@@ -36,6 +36,7 @@ interface EventRepository {
         latitude: Double,
         longitude: Double,
         dateTime: String,
+        endTime: String? = null,
         price: Double,
         coverImage: String?,
         totalSeats: Int?

@@ -276,6 +276,15 @@ class CreateEventViewModel @Inject constructor(
         // Format: YYYY-MM-DD HH:MM:SS
         return "${uiState.date} ${uiState.startTime}:00"
     }
+    
+    // Helper method to format end time for API
+    private fun formatEndTime(): String? {
+        // If end time is empty, return null
+        if (uiState.endTime.isBlank()) return null
+        
+        // Format: YYYY-MM-DD HH:MM:SS
+        return "${uiState.date} ${uiState.endTime}:00"
+    }
 
     // Event creation methods
     fun saveEventDraft() {
@@ -307,6 +316,9 @@ class CreateEventViewModel @Inject constructor(
                     // Format date and time
                     val dateTime = formatDateTime()
                     
+                    // Format end time
+                    val endTime = formatEndTime()
+                    
                     // Ensure we have valid coordinates
                     if (!locationService.areCoordinatesValid(uiState.latitude, uiState.longitude)) {
                         // Try to geocode the address if coordinates are not valid
@@ -329,11 +341,12 @@ class CreateEventViewModel @Inject constructor(
                     val result = eventRepository.createEvent(
                         title = uiState.title,
                         description = uiState.description,
-                        category = uiState.category?.name ?: "",
+                        category = uiState.category?.id?.toString() ?: "1", // Use category ID instead of name
                         locationName = uiState.location,
                         latitude = uiState.latitude,
                         longitude = uiState.longitude,
                         dateTime = dateTime,
+                        endTime = endTime,
                         price = price,
                         coverImage = imageUrl,
                         totalSeats = capacity
