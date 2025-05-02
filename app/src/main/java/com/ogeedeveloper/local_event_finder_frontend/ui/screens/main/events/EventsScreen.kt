@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,9 +56,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
-import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavItem
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.EmptyState
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.SimpleAppBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.SimpleDateFormat
@@ -73,75 +76,93 @@ fun EventsScreen(
     modifier: Modifier = Modifier,
     viewModel: EventsViewModel = hiltViewModel()
 ) {
-    val bottomNavItems = remember {
-        listOf(
-            BottomNavItem(
-                title = "Home",
-                selectedIcon = Icons.Filled.Home,
-                unselectedIcon = Icons.Outlined.Home
-            ),
-            BottomNavItem(
-                title = "Explore",
-                selectedIcon = Icons.Filled.Search,
-                unselectedIcon = Icons.Outlined.Search
-            ),
-            BottomNavItem(
-                title = "Create",
-                selectedIcon = Icons.Filled.Add,
-                unselectedIcon = Icons.Outlined.Add
-            ),
-            BottomNavItem(
-                title = "Bookings",
-                selectedIcon = Icons.Filled.Event,
-                unselectedIcon = Icons.Outlined.Event
-            ),
-            BottomNavItem(
-                title = "Profile",
-                selectedIcon = Icons.Filled.Person,
-                unselectedIcon = Icons.Outlined.Person
-            )
-        )
-    }
-
-    var selectedTabIndex by remember { mutableIntStateOf(3) } // Events tab selected by default
-
+    val uiState by viewModel.uiState.collectAsState()
+    
     Scaffold(
-        topBar = {
-            SimpleAppBar(
-                title = "My Event"
-            )
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToCreateEvent,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Create Event"
+                )
+            }
         },
         bottomBar = {
-            BottomNavBar(
-                currentTab = selectedTabIndex,
-                onTabSelected = { index ->
-                    selectedTabIndex = index
-                    when (index) {
-                        0 -> onNavigateToHome()
-                        1 -> onNavigateToSearch()
-                        2 -> onNavigateToCreateEvent()
-                        3 -> {} // Already on Events
-                        4 -> onNavigateToProfile()
-                    }
-                },
-                items = bottomNavItems
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                BottomNavItem(
+                    icon = Icons.Outlined.Home,
+                    selectedIcon = Icons.Filled.Home,
+                    label = "Home",
+                    selected = false,
+                    onClick = onNavigateToHome
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Search,
+                    selectedIcon = Icons.Filled.Search,
+                    label = "Explore",
+                    selected = false,
+                    onClick = onNavigateToSearch
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Event,
+                    selectedIcon = Icons.Filled.Event,
+                    label = "Events",
+                    selected = true,
+                    onClick = {}
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Person,
+                    selectedIcon = Icons.Filled.Person,
+                    label = "Profile",
+                    selected = false,
+                    onClick = onNavigateToProfile
+                )
+            }
         }
     ) { paddingValues ->
-        EventsContent(
-            upcomingEvents = getSampleEvents(),
-            pastEvents = getSamplePastEvents(),
-            onEventClick = onNavigateToEventDetails,
-            modifier = modifier.padding(paddingValues)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            EventsContent(
+                isLoading = uiState.isLoading,
+                errorMessage = uiState.errorMessage,
+                upcomingEvents = uiState.upcomingEvents,
+                pastEvents = uiState.pastEvents,
+                selectedTabIndex = uiState.selectedTabIndex,
+                onTabSelected = viewModel::selectTab,
+                onEventClick = onNavigateToEventDetails,
+                onRefresh = viewModel::refreshEvents,
+                onCreateEventClick = onNavigateToCreateEvent,
+                modifier = Modifier
+            )
+        }
     }
 }
 
 @Composable
 fun EventsContent(
+    isLoading: Boolean,
+    errorMessage: String?,
     upcomingEvents: List<Event>,
     pastEvents: List<Event>,
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
     onEventClick: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onCreateEventClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -152,7 +173,6 @@ fun EventsContent(
         Spacer(modifier = Modifier.height(16.dp))
         
         // Tab selector
-        var selectedTabIndex by remember { mutableIntStateOf(0) }
         val tabs = listOf("Upcoming", "Past Event")
         
         TabRow(
@@ -166,7 +186,7 @@ fun EventsContent(
                 val selected = selectedTabIndex == index
                 Tab(
                     selected = selected,
-                    onClick = { selectedTabIndex = index },
+                    onClick = { onTabSelected(index) },
                     modifier = Modifier
                         .padding(horizontal = 4.dp, vertical = 8.dp)
                         .clip(RoundedCornerShape(8.dp))
@@ -188,37 +208,53 @@ fun EventsContent(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Event list
-        val events = if (selectedTabIndex == 0) upcomingEvents else pastEvents
-        
-        if (events.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No ${if (selectedTabIndex == 0) "upcoming" else "past"} events found",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        // Event list with pull-to-refresh
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f),
+            contentAlignment = Alignment.Center
+        ) {
+            val events = if (selectedTabIndex == 0) upcomingEvents else pastEvents
+            
+            if (isLoading && events.isEmpty()) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary
                 )
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                items(events) { event ->
-                    EventItem(
-                        event = event,
-                        onClick = { onEventClick(event.id) }
-                    )
-                }
-                
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
+            } else if (errorMessage != null) {
+                EmptyState(
+                    title = "Oops!",
+                    message = errorMessage,
+                    imageResId = R.drawable.ic_empty_events,
+                    actionLabel = "Try Again",
+                    onActionClick = onRefresh
+                )
+            } else if (events.isEmpty()) {
+                EmptyState(
+                    title = "No ${if (selectedTabIndex == 0) "Upcoming" else "Past"} Events",
+                    message = if (selectedTabIndex == 0) 
+                        "There are no upcoming events at the moment. Create one now!" 
+                    else 
+                        "You haven't attended any events yet.",
+                    imageResId = R.drawable.ic_empty_events,
+                    actionLabel = if (selectedTabIndex == 0) "Create Event" else null,
+                    onActionClick = if (selectedTabIndex == 0) onCreateEventClick else null
+                )
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(events) { event ->
+                        EventItem(
+                            event = event,
+                            onClick = { onEventClick(event.id) }
+                        )
+                    }
+                    
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         }
@@ -398,9 +434,16 @@ fun EventsScreenPreview() {
     LocaleventfinderfrontendTheme {
         Surface {
             EventsContent(
+                isLoading = false,
+                errorMessage = "",
                 upcomingEvents = getSampleEvents(),
                 pastEvents = getSamplePastEvents(),
-                onEventClick = {}
+                selectedTabIndex = 0,
+                onTabSelected = {},
+                onEventClick = {},
+                onRefresh = {},
+                onCreateEventClick = {},
+                modifier = Modifier
             )
         }
     }

@@ -105,6 +105,9 @@ dependencies {
     implementation("androidx.hilt:hilt-navigation-fragment:1.2.0")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
+    // Pull-to-refresh
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.27.0")
+
     // Dagger Hilt dependencies
     implementation("com.google.dagger:dagger:2.51.1")
     implementation("com.google.dagger:hilt-android:2.51.1")
