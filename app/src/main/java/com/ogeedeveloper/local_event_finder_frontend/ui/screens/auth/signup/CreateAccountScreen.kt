@@ -1,12 +1,15 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,7 +19,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -260,16 +262,16 @@ fun SocialButton(
     contentDescription: String,
     modifier: Modifier = Modifier
 ) {
-    IconButton(
-        onClick = onClick,
+    Box(
         modifier = modifier
-            .clip(CircleShape)
-            .padding(8.dp)
+            .size(56.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             painter = painterResource(id = iconResId),
             contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurface
+            modifier = Modifier.size(56.dp)
         )
     }
 }
