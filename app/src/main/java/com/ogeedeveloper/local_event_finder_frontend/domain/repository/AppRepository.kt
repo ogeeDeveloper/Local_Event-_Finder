@@ -2,6 +2,7 @@ package com.ogeedeveloper.local_event_finder_frontend.domain.repository
 
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.User
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -39,6 +40,7 @@ interface EventRepository {
         coverImage: String?,
         totalSeats: Int
     ): Result<String>
+    suspend fun getCategories(): Result<List<Category>>
 }
 
 // Basic domain model classes that would be defined in their own files
@@ -53,3 +55,7 @@ data class Event(
     val imageUrl: String,
     val category: String
 )
+
+//data class User(
+//    // Add user properties here
+//)

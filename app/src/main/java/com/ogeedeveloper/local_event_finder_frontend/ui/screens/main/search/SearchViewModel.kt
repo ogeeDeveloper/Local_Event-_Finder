@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,23 +25,27 @@ data class SearchUiState(
     val events: List<Event> = emptyList(),
     val filteredEvents: List<Event> = emptyList(),
     val categories: List<Category> = emptyList(),
-    val selectedCategoryId: String? = null,
+    val selectedCategoryId: Int? = null,
     val priceRange: ClosedFloatingPointRange<Float> = 0f..1000f,
     val selectedPriceRange: ClosedFloatingPointRange<Float> = 0f..1000f,
-    val selectedDate: Date? = null
+    val selectedDate: Date? = null,
+    val isCategoriesLoading: Boolean = false
 )
 
 /**
  * ViewModel for the Search screen
  */
 @HiltViewModel
-class SearchViewModel @Inject constructor() : ViewModel() {
+class SearchViewModel @Inject constructor(
+    private val eventRepository: EventRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
-        loadSampleData() // In a real app, this would call a repository to fetch real data
+        loadSampleEvents() // In a real app, this would call a repository to fetch real events
+        loadCategories() // Fetch categories from the API
     }
 
     fun updateSearchQuery(query: String) {
@@ -61,7 +66,7 @@ class SearchViewModel @Inject constructor() : ViewModel() {
         // In a real app, this would trigger a new search with the updated location
     }
 
-    fun selectCategory(categoryId: String?) {
+    fun selectCategory(categoryId: Int?) {
         _uiState.update { currentState ->
             currentState.copy(
                 selectedCategoryId = categoryId
@@ -112,7 +117,7 @@ class SearchViewModel @Inject constructor() : ViewModel() {
                 
                 // Filter by category
                 val matchesCategory = currentState.selectedCategoryId == null || 
-                    event.category == currentState.selectedCategoryId
+                    event.category == currentState.categories.find { it.id == currentState.selectedCategoryId }?.name
                 
                 // Filter by price
                 val matchesPrice = event.price >= currentState.selectedPriceRange.start && 
@@ -140,13 +145,12 @@ class SearchViewModel @Inject constructor() : ViewModel() {
                 cal1.get(java.util.Calendar.DAY_OF_MONTH) == cal2.get(java.util.Calendar.DAY_OF_MONTH)
     }
 
-    // Sample data functions - these would be removed in a real app with actual API calls
-    private fun loadSampleData() {
+    // Load sample events - this would be replaced with a repository call in a real app
+    private fun loadSampleEvents() {
         _uiState.update { it.copy(isLoading = true) }
         
         // In a real app, this would be fetched from a repository
         val sampleEvents = getSampleEvents()
-        val sampleCategories = getSampleCategories()
         
         // Calculate price range based on events
         val minPrice = sampleEvents.minOfOrNull { it.price }?.toFloat() ?: 0f
@@ -158,10 +162,49 @@ class SearchViewModel @Inject constructor() : ViewModel() {
                 isLoading = false,
                 events = sampleEvents,
                 filteredEvents = sampleEvents,
-                categories = sampleCategories,
                 priceRange = priceRange,
                 selectedPriceRange = priceRange
             )
+        }
+    }
+    
+    // Fetch categories from the API
+    private fun loadCategories() {
+        _uiState.update { it.copy(isCategoriesLoading = true, errorMessage = null) }
+        
+        viewModelScope.launch {
+            try {
+                val result = eventRepository.getCategories()
+                result.fold(
+                    onSuccess = { categories ->
+                        _uiState.update { 
+                            it.copy(
+                                isCategoriesLoading = false,
+                                categories = categories
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        // If API call fails, fall back to sample categories
+                        _uiState.update { 
+                            it.copy(
+                                isCategoriesLoading = false,
+                                errorMessage = error.message,
+                                categories = getSampleCategories()
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                // Handle any unexpected errors
+                _uiState.update { 
+                    it.copy(
+                        isCategoriesLoading = false,
+                        errorMessage = e.message,
+                        categories = getSampleCategories()
+                    )
+                }
+            }
         }
     }
 
@@ -202,12 +245,17 @@ class SearchViewModel @Inject constructor() : ViewModel() {
         )
     }
 
+    // Fallback sample categories if API fails
     private fun getSampleCategories(): List<Category> {
         return listOf(
-            Category(id = "1", name = "Business"),
-            Category(id = "2", name = "Festival"),
-            Category(id = "3", name = "Music"),
-            Category(id = "4", name = "Comedy")
+            Category(id = 1, name = "Business"),
+            Category(id = 2, name = "Festival"),
+            Category(id = 3, name = "Music"),
+            Category(id = 4, name = "Comedy"),
+            Category(id = 5, name = "Concert"),
+            Category(id = 6, name = "Workshop"),
+            Category(id = 7, name = "Conference"),
+            Category(id = 8, name = "Exhibition")
         )
     }
 }

@@ -1,12 +1,15 @@
 package com.ogeedeveloper.local_event_finder_frontend.ui.screens.main.filter
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
 
@@ -19,7 +22,7 @@ data class FilterUiState(
     val location: String = "South Jakarta",
     val date: Date? = null,
     val categories: List<Category> = emptyList(),
-    val selectedCategoryId: String? = null,
+    val selectedCategoryId: Int? = null,
     val priceRange: ClosedFloatingPointRange<Float> = 0f..1000f,
     val selectedPriceRange: ClosedFloatingPointRange<Float> = 10f..25f
 )
@@ -28,13 +31,15 @@ data class FilterUiState(
  * ViewModel for the Filter screen
  */
 @HiltViewModel
-class FilterViewModel @Inject constructor() : ViewModel() {
+class FilterViewModel @Inject constructor(
+    private val eventRepository: EventRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FilterUiState())
     val uiState: StateFlow<FilterUiState> = _uiState.asStateFlow()
 
     init {
-        loadCategories() // In a real app, this would call a repository to fetch real data
+        loadCategories() // Fetch categories from the API
     }
 
     fun updateLocation(location: String) {
@@ -53,7 +58,7 @@ class FilterViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    fun selectCategory(categoryId: String?) {
+    fun selectCategory(categoryId: Int?) {
         _uiState.update { currentState ->
             currentState.copy(
                 selectedCategoryId = categoryId
@@ -80,36 +85,62 @@ class FilterViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    // This function would be replaced with a repository call in a real app
+    // Get categories from the current UI state
     fun getCategories(): List<Category> {
         return _uiState.value.categories
     }
 
-    // Sample data functions - these would be removed in a real app with actual API calls
+    // Fetch categories from the API
     private fun loadCategories() {
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         
-        // In a real app, this would be fetched from a repository
-        val sampleCategories = getSampleCategories()
-        
-        _uiState.update { 
-            it.copy(
-                isLoading = false,
-                categories = sampleCategories
-            )
+        viewModelScope.launch {
+            try {
+                val result = eventRepository.getCategories()
+                result.fold(
+                    onSuccess = { categories ->
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                categories = categories
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        // If API call fails, fall back to sample categories
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message,
+                                categories = getSampleCategories()
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                // Handle any unexpected errors
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message,
+                        categories = getSampleCategories()
+                    )
+                }
+            }
         }
     }
 
+    // Fallback sample categories if API fails
     private fun getSampleCategories(): List<Category> {
         return listOf(
-            Category(id = "1", name = "Business"),
-            Category(id = "2", name = "Festival"),
-            Category(id = "3", name = "Music"),
-            Category(id = "4", name = "Comedy"),
-            Category(id = "5", name = "Concert"),
-            Category(id = "6", name = "Workshop"),
-            Category(id = "7", name = "Conference"),
-            Category(id = "8", name = "Exhibition")
+            Category(id = 1, name = "Business"),
+            Category(id = 2, name = "Festival"),
+            Category(id = 3, name = "Music"),
+            Category(id = 4, name = "Comedy"),
+            Category(id = 5, name = "Concert"),
+            Category(id = 6, name = "Workshop"),
+            Category(id = 7, name = "Conference"),
+            Category(id = 8, name = "Exhibition")
         )
     }
 }

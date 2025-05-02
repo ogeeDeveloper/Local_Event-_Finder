@@ -131,8 +131,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideEventApi(apiConfig: ApiConfig): EventApi {
-        return EventApi(apiConfig)
+    fun provideEventApi(apiConfig: ApiConfig, retrofit: Retrofit): EventApi {
+        return EventApi(apiConfig, retrofit)
     }
 
     @Provides

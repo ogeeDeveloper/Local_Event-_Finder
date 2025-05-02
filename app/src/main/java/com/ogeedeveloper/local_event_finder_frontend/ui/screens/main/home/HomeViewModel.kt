@@ -6,11 +6,13 @@ import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.User
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.AuthRepository
+import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Date
 import javax.inject.Inject
@@ -25,7 +27,8 @@ data class HomeUiState(
     val featuredEvents: List<Event> = emptyList(),
     val nearbyEvents: List<Event> = emptyList(),
     val categories: List<Category> = emptyList(),
-    val selectedCategoryId: String? = null
+    val selectedCategoryId: Int? = null,
+    val isCategoriesLoading: Boolean = false
 )
 
 /**
@@ -33,7 +36,8 @@ data class HomeUiState(
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val eventRepository: EventRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -41,38 +45,77 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadCurrentUser()
-        loadSampleData() // In a real app, this would call a repository to fetch real data
+        loadSampleEvents() // In a real app, this would fetch real events
+        loadCategories() // Fetch categories from the API
     }
 
     private fun loadCurrentUser() {
         viewModelScope.launch {
             authRepository.getCurrentUser().collectLatest { user ->
-                _uiState.value = _uiState.value.copy(currentUser = user)
+                _uiState.update { currentState ->
+                    currentState.copy(currentUser = user)
+                }
             }
         }
     }
 
-    private fun loadSampleData() {
-        _uiState.value = _uiState.value.copy(
-            isLoading = true
-        )
+    private fun loadSampleEvents() {
+        _uiState.update { it.copy(isLoading = true) }
 
         // In a real app, this would be fetched from a repository
         val sampleEvents = getSampleEvents()
-        val sampleCategories = getSampleCategories()
 
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             isLoading = false,
             featuredEvents = sampleEvents,
-            nearbyEvents = sampleEvents,
-            categories = sampleCategories
-        )
+            nearbyEvents = sampleEvents
+        )}
+    }
+    
+    // Fetch categories from the API
+    private fun loadCategories() {
+        _uiState.update { it.copy(isCategoriesLoading = true, errorMessage = null) }
+        
+        viewModelScope.launch {
+            try {
+                val result = eventRepository.getCategories()
+                result.fold(
+                    onSuccess = { categories ->
+                        _uiState.update { 
+                            it.copy(
+                                isCategoriesLoading = false,
+                                categories = categories
+                            )
+                        }
+                    },
+                    onFailure = { error ->
+                        // If API call fails, fall back to sample categories
+                        _uiState.update { 
+                            it.copy(
+                                isCategoriesLoading = false,
+                                errorMessage = error.message,
+                                categories = getSampleCategories()
+                            )
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                // Handle any unexpected errors
+                _uiState.update { 
+                    it.copy(
+                        isCategoriesLoading = false,
+                        errorMessage = e.message,
+                        categories = getSampleCategories()
+                    )
+                }
+            }
+        }
     }
 
-    fun selectCategory(categoryId: String?) {
-        _uiState.value = _uiState.value.copy(
-            selectedCategoryId = categoryId
-        )
+    fun selectCategory(categoryId: Int?) {
+        _uiState.update { currentState ->
+            currentState.copy(selectedCategoryId = categoryId)
+        }
         
         // In a real app, this would filter events based on the selected category
         // For now, we'll just use the same sample data
@@ -115,12 +158,17 @@ class HomeViewModel @Inject constructor(
         )
     }
 
+    // Fallback sample categories if API fails
     private fun getSampleCategories(): List<Category> {
         return listOf(
-            Category(id = "1", name = "Business"),
-            Category(id = "2", name = "Festival"),
-            Category(id = "3", name = "Festival"),
-            Category(id = "4", name = "Comedy")
+            Category(id = 1, name = "Business"),
+            Category(id = 2, name = "Festival"),
+            Category(id = 3, name = "Music"),
+            Category(id = 4, name = "Comedy"),
+            Category(id = 5, name = "Concert"),
+            Category(id = 6, name = "Workshop"),
+            Category(id = 7, name = "Conference"),
+            Category(id = 8, name = "Exhibition")
         )
     }
 }

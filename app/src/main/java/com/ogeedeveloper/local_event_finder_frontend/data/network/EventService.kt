@@ -1,6 +1,7 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.network
 
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -12,22 +13,25 @@ import retrofit2.http.Query
  * Retrofit service interface for event-related API endpoints
  */
 interface EventService {
-    @GET("api/events")
+    @GET("events")
     suspend fun getEvents(): Response<List<Event>>
     
-    @GET("api/events/{id}")
+    @GET("events/{id}")
     suspend fun getEventById(@Path("id") eventId: String): Response<Event>
     
-    @POST("api/events")
+    @POST("events")
     suspend fun createEvent(@Body request: CreateEventRequest): Response<CreateEventResponse>
     
-    @GET("api/events/nearby")
+    @GET("events/nearby")
     suspend fun getNearbyEvents(
         @Query("lat") latitude: Double,
         @Query("lng") longitude: Double,
         @Query("radius") radius: Int
     ): Response<List<Event>>
     
-    @GET("api/events/category/{category}")
+    @GET("events/category/{category}")
     suspend fun getEventsByCategory(@Path("category") category: String): Response<List<Event>>
+    
+    @GET("events/categories")
+    suspend fun getCategories(): Response<List<Category>>
 }

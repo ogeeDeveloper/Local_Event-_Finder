@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -22,7 +23,7 @@ data class CreateEventUiState(
     // Step 1: Event Details
     val title: String = "",
     val description: String = "",
-    val category: String = "",
+    val category: Category? = null,
     val imageUri: Uri? = null,
     
     // Step 2: Location & Time
@@ -43,7 +44,11 @@ data class CreateEventUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val isEventCreated: Boolean = false,
-    val createdEventId: String? = null
+    val createdEventId: String? = null,
+    
+    // Categories
+    val categories: List<Category> = emptyList(),
+    val isCategoriesLoading: Boolean = false
 )
 
 /**
@@ -56,6 +61,70 @@ class CreateEventViewModel @Inject constructor(
 
     var uiState by mutableStateOf(CreateEventUiState())
         private set
+        
+    init {
+        // Fetch categories when ViewModel is created
+        fetchCategories()
+    }
+    
+    // Fetch categories from the API
+    private fun fetchCategories() {
+        viewModelScope.launch {
+            uiState = uiState.copy(isCategoriesLoading = true)
+            
+            try {
+                val result = eventRepository.getCategories()
+                result.fold(
+                    onSuccess = { categories ->
+                        uiState = uiState.copy(
+                            categories = categories,
+                            isCategoriesLoading = false
+                        )
+                    },
+                    onFailure = { error ->
+                        // Fallback to default categories if API call fails
+                        uiState = uiState.copy(
+                            categories = getDefaultCategories(),
+                            isCategoriesLoading = false,
+                            errorMessage = "Failed to load categories: ${error.message}"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                uiState = uiState.copy(
+                    categories = getDefaultCategories(),
+                    isCategoriesLoading = false,
+                    errorMessage = "An error occurred: ${e.message}"
+                )
+            }
+        }
+    }
+    
+    // Default categories as fallback
+    private fun getDefaultCategories(): List<Category> {
+        return listOf(
+            Category(id = 1, name = "Music"),
+            Category(id = 2, name = "Business"),
+            Category(id = 3, name = "Food & Drink"),
+            Category(id = 4, name = "Community"),
+            Category(id = 5, name = "Arts"),
+            Category(id = 6, name = "Film & Media"),
+            Category(id = 7, name = "Sports & Fitness"),
+            Category(id = 8, name = "Health"),
+            Category(id = 9, name = "Science & Tech"),
+            Category(id = 10, name = "Travel & Outdoor"),
+            Category(id = 11, name = "Charity & Causes"),
+            Category(id = 12, name = "Religion & Spirituality"),
+            Category(id = 13, name = "Family & Education"),
+            Category(id = 14, name = "Seasonal"),
+            Category(id = 15, name = "Government"),
+            Category(id = 16, name = "Fashion"),
+            Category(id = 17, name = "Home & Lifestyle"),
+            Category(id = 18, name = "Auto, Boat & Air"),
+            Category(id = 19, name = "Hobbies"),
+            Category(id = 20, name = "Other")
+        )
+    }
 
     // Navigation methods
     fun navigateToNextStep() {
@@ -83,7 +152,7 @@ class CreateEventViewModel @Inject constructor(
         uiState = uiState.copy(description = description)
     }
 
-    fun updateCategory(category: String) {
+    fun updateCategory(category: Category?) {
         uiState = uiState.copy(category = category)
     }
 
@@ -154,7 +223,7 @@ class CreateEventViewModel @Inject constructor(
             uiState = uiState.copy(errorMessage = "Event description is required")
             return false
         }
-        if (uiState.category.isBlank()) {
+        if (uiState.category == null) {
             uiState = uiState.copy(errorMessage = "Please select a category")
             return false
         }
@@ -229,7 +298,7 @@ class CreateEventViewModel @Inject constructor(
                     val result = eventRepository.createEvent(
                         title = uiState.title,
                         description = uiState.description,
-                        category = uiState.category,
+                        category = uiState.category?.name ?: "",
                         locationName = uiState.location,
                         latitude = uiState.latitude,
                         longitude = uiState.longitude,

@@ -3,21 +3,25 @@ package com.ogeedeveloper.local_event_finder_frontend.ui.screens.events.create.s
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -39,12 +43,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
-import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.DropdownInput
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 
@@ -54,10 +59,12 @@ fun EventDetailsStep(
     onTitleChange: (String) -> Unit,
     description: String,
     onDescriptionChange: (String) -> Unit,
-    category: String,
-    onCategoryChange: (String) -> Unit,
+    category: Category?,
+    onCategoryChange: (Category?) -> Unit,
     imageUri: Uri?,
     onImageSelected: (Uri?) -> Unit,
+    categories: List<Category> = getSampleCategories(),
+    isCategoriesLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // Image picker launcher
@@ -104,7 +111,7 @@ fun EventDetailsStep(
         OutlinedTextField(
             value = description,
             onValueChange = onDescriptionChange,
-            placeholder = { Text("Describe your event...") },
+            placeholder = { Text("Describe your event") },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp),
@@ -118,9 +125,9 @@ fun EventDetailsStep(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Event Category
+        // Category Dropdown
         Text(
-            text = "Event Category",
+            text = "Category",
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
         )
@@ -130,14 +137,16 @@ fun EventDetailsStep(
         CategoryDropdown(
             selectedCategory = category,
             onCategorySelected = onCategoryChange,
-            categories = getSampleCategories()
+            categories = categories,
+            isLoading = isCategoriesLoading,
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Event Image
+        // Image Upload
         Text(
-            text = "Event Image",
+            text = "Event Cover Image",
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
         )
@@ -146,40 +155,58 @@ fun EventDetailsStep(
         
         ImageUploadBox(
             imageUri = imageUri,
-            onImageClick = { imagePickerLauncher.launch("image/*") }
+            onImageClick = { imagePickerLauncher.launch("image/*") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
         )
     }
 }
 
 @Composable
 fun CategoryDropdown(
-    selectedCategory: String,
-    onCategorySelected: (String) -> Unit,
-    categories: List<String>,
+    selectedCategory: Category?,
+    onCategorySelected: (Category?) -> Unit,
+    categories: List<Category>,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
     
     Box(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
-            value = selectedCategory,
+            value = selectedCategory?.name ?: "",
             onValueChange = { },
-            placeholder = { Text("Select category") },
+            placeholder = { 
+                if (isLoading) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Loading categories...")
+                    }
+                } else {
+                    Text("Select category")
+                }
+            },
             trailingIcon = {
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Default.ArrowDropDown,
                     contentDescription = "Select category"
                 )
             },
             readOnly = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = { expanded = true }),
+                .clickable(onClick = { if (!isLoading) expanded = true }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
             ),
-            shape = RoundedCornerShape(8.dp)
+            shape = RoundedCornerShape(8.dp),
+            enabled = !isLoading
         )
         
         DropdownMenu(
@@ -189,7 +216,7 @@ fun CategoryDropdown(
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
-                    text = { Text(category) },
+                    text = { Text(category.name) },
                     onClick = {
                         onCategorySelected(category)
                         expanded = false
@@ -222,12 +249,10 @@ fun ImageUploadBox(
     ) {
         if (imageUri != null) {
             // Display the selected image using Coil
-            Image(
-                painter = rememberAsyncImagePainter(
-                    ImageRequest.Builder(LocalContext.current)
-                        .data(data = imageUri)
-                        .build()
-                ),
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(data = imageUri)
+                    .build(),
                 contentDescription = "Selected image",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -260,28 +285,28 @@ fun ImageUploadBox(
 }
 
 // Sample data
-private fun getSampleCategories(): List<String> {
+private fun getSampleCategories(): List<Category> {
     return listOf(
-        "Music",
-        "Business",
-        "Food & Drink",
-        "Community",
-        "Arts",
-        "Film & Media",
-        "Sports & Fitness",
-        "Health",
-        "Science & Tech",
-        "Travel & Outdoor",
-        "Charity & Causes",
-        "Religion & Spirituality",
-        "Family & Education",
-        "Seasonal",
-        "Government",
-        "Fashion",
-        "Home & Lifestyle",
-        "Auto, Boat & Air",
-        "Hobbies",
-        "Other"
+        Category(id = 1, name = "Music"),
+        Category(id = 2, name = "Business"),
+        Category(id = 3, name = "Food & Drink"),
+        Category(id = 4, name = "Community"),
+        Category(id = 5, name = "Arts"),
+        Category(id = 6, name = "Film & Media"),
+        Category(id = 7, name = "Sports & Fitness"),
+        Category(id = 8, name = "Health"),
+        Category(id = 9, name = "Science & Tech"),
+        Category(id = 10, name = "Travel & Outdoor"),
+        Category(id = 11, name = "Charity & Causes"),
+        Category(id = 12, name = "Religion & Spirituality"),
+        Category(id = 13, name = "Family & Education"),
+        Category(id = 14, name = "Seasonal"),
+        Category(id = 15, name = "Government"),
+        Category(id = 16, name = "Fashion"),
+        Category(id = 17, name = "Home & Lifestyle"),
+        Category(id = 18, name = "Auto, Boat & Air"),
+        Category(id = 19, name = "Hobbies"),
+        Category(id = 20, name = "Other")
     )
 }
 
@@ -295,7 +320,7 @@ fun EventDetailsStepPreview() {
                 onTitleChange = {},
                 description = "",
                 onDescriptionChange = {},
-                category = "",
+                category = null,
                 onCategoryChange = {},
                 imageUri = null,
                 onImageSelected = {}

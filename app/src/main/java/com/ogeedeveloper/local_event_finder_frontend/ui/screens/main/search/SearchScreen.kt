@@ -529,10 +529,14 @@ private fun getSampleEvents(): List<Event> {
 
 private fun getSampleCategories(): List<Category> {
     return listOf(
-        Category(id = "1", name = "Business"),
-        Category(id = "2", name = "Festival"),
-        Category(id = "3", name = "Festival"),
-        Category(id = "4", name = "Comedy")
+        Category(id = 1, name = "Business"),
+        Category(id = 2, name = "Festival"),
+        Category(id = 3, name = "Music"),
+        Category(id = 4, name = "Comedy"),
+        Category(id = 5, name = "Concert"),
+        Category(id = 6, name = "Workshop"),
+        Category(id = 7, name = "Conference"),
+        Category(id = 8, name = "Exhibition")
     )
 }
 

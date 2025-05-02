@@ -4,6 +4,7 @@ import android.text.format.DateUtils.formatDateTime
 import com.ogeedeveloper.local_event_finder_frontend.data.network.EventApi
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -174,6 +175,16 @@ class EventRepositoryImpl @Inject constructor(
             )
             Result.success(eventId)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun getCategories(): Result<List<Category>> {
+        return try {
+            val categories = eventApi.getCategories()
+            Result.success(categories)
+        } catch (e: Exception) {
+            // Fallback to default categories if API call fails
             Result.failure(e)
         }
     }

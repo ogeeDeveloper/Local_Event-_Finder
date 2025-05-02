@@ -1,6 +1,7 @@
 package com.ogeedeveloper.local_event_finder_frontend.data.network
 
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
+import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import retrofit2.Retrofit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,6 +67,15 @@ class EventApi @Inject constructor(
             return response.body()?.id ?: throw Exception("Failed to get event ID from response")
         } else {
             throw Exception("Failed to create event: ${response.errorBody()?.string()}")
+        }
+    }
+    
+    suspend fun getCategories(): List<Category> {
+        val response = eventService.getCategories()
+        if (response.isSuccessful) {
+            return response.body() ?: emptyList()
+        } else {
+            throw Exception("Failed to fetch categories: ${response.errorBody()?.string()}")
         }
     }
 }
