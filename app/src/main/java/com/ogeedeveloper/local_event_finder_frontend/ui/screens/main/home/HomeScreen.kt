@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -67,6 +68,7 @@ import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavItem
+import com.ogeedeveloper.local_event_finder_frontend.ui.components.EmptyState
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -78,6 +80,7 @@ fun HomeScreen(
     onNavigateToEvents: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToCreateEvent: () -> Unit,
+    onNavigateToEventDetails: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -134,14 +137,41 @@ fun HomeScreen(
         },
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->
-        HomeContent(
-            userName = uiState.currentUser?.fullName?.split(" ")?.firstOrNull() ?: "Guest",
-            userProfileUrl = uiState.currentUser?.profileImageUrl,
-            featuredEvents = uiState.featuredEvents,
-            nearbyEvents = uiState.nearbyEvents,
-            categories = uiState.categories,
-            modifier = Modifier.padding(paddingValues)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Show loading indicator when loading
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else if (uiState.errorMessage != null && uiState.featuredEvents.isEmpty() && uiState.nearbyEvents.isEmpty()) {
+                // Show error state if there's an error and no events
+                EmptyState(
+                    title = "Oops!",
+                    message = uiState.errorMessage ?: "Something went wrong",
+                    imageResId = R.drawable.ic_empty_events,
+                    actionLabel = "Try Again",
+                    onActionClick = { viewModel.refreshData() }
+                )
+            } else {
+                // Show content when data is available
+                HomeContent(
+                    userName = uiState.currentUser?.fullName?.split(" ")?.firstOrNull() ?: "Guest",
+                    userProfileUrl = uiState.currentUser?.profileImageUrl,
+                    featuredEvents = uiState.featuredEvents,
+                    nearbyEvents = uiState.nearbyEvents,
+                    categories = uiState.categories,
+                    onEventClick = onNavigateToEventDetails,
+                    onCategorySelected = { categoryId -> viewModel.selectCategory(categoryId) },
+                    selectedCategoryId = uiState.selectedCategoryId,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
     }
 }
 
@@ -152,125 +182,125 @@ fun HomeContent(
     featuredEvents: List<Event>,
     nearbyEvents: List<Event>,
     categories: List<Category>,
+    onEventClick: (String) -> Unit,
+    onCategorySelected: (Int?) -> Unit = {},
+    selectedCategoryId: Int? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(top = 16.dp)
+            .padding(horizontal = 16.dp)
     ) {
-        // Welcome Header with Profile Image
+        // Header with greeting and profile
         Row(
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            // Profile Image
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                if (userProfileUrl != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(userProfileUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop,
-                        error = painterResource(id = R.drawable.profile_placeholder),
-                        fallback = painterResource(id = R.drawable.profile_placeholder)
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.profile_placeholder),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier.size(40.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column {
-                Text(
-                    text = "Hello,",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = userName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Featured events
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items(featuredEvents) { event ->
-                FeaturedEventCard(
-                    event = event,
-                    onClick = { /* Navigate to event details */ },
-                    modifier = Modifier.width(280.dp)
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        // Nearby events section
-        Row(
-            modifier = Modifier.fillMaxWidth(),
+                .padding(top = 24.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Nearby Event",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Column {
+                Text(
+                    text = "Hello, $userName",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Text(
+                    text = "Let's explore what's happening nearby",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
             
-            Text(
-                text = "View All",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { /* Navigate to all events */ }
+            // Profile image
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(userProfileUrl ?: R.drawable.profile_placeholder)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Profile Image",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
             )
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
         
         // Category filters
-        CategoryFilters(categories = categories)
+        Text(
+            text = "Categories",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
+        )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        CategoryFilters(
+            categories = categories,
+            selectedCategoryId = selectedCategoryId,
+            onCategorySelected = onCategorySelected
+        )
         
-        // Nearby events list
-        nearbyEvents.forEach { event ->
-            NearbyEventItem(
-                event = event,
-                onClick = { /* Navigate to event details */ }
+        // Featured Events
+        Text(
+            text = "Featured Events",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
+        )
+        
+        if (featuredEvents.isEmpty()) {
+            EmptyState(
+                title = "No Featured Events",
+                message = "There are no featured events at the moment",
+                imageResId = R.drawable.ic_empty_events,
+                modifier = Modifier.height(200.dp)
             )
-            Spacer(modifier = Modifier.height(12.dp))
+        } else {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(end = 16.dp),
+                modifier = Modifier.height(280.dp)
+            ) {
+                items(featuredEvents) { event ->
+                    FeaturedEventCard(
+                        event = event,
+                        onClick = { onEventClick(event.id) },
+                        modifier = Modifier.width(280.dp)
+                    )
+                }
+            }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        // Nearby Events
+        Text(
+            text = "Nearby Events",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 24.dp, bottom = 12.dp)
+        )
+        
+        if (nearbyEvents.isEmpty()) {
+            EmptyState(
+                title = "No Nearby Events",
+                message = "There are no events nearby at the moment",
+                imageResId = R.drawable.ic_empty_events,
+                modifier = Modifier.height(200.dp)
+            )
+        } else {
+            nearbyEvents.forEach { event ->
+                NearbyEventItem(
+                    event = event,
+                    onClick = { onEventClick(event.id) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+        
+        // Add bottom padding
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -403,6 +433,8 @@ fun FeaturedEventCard(
 @Composable
 fun CategoryFilters(
     categories: List<Category>,
+    selectedCategoryId: Int? = null,
+    onCategorySelected: (Int?) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedCategoryIndex by remember { mutableIntStateOf(0) }
@@ -414,16 +446,16 @@ fun CategoryFilters(
         item {
             CategoryChip(
                 name = "All",
-                isSelected = selectedCategoryIndex == 0,
-                onClick = { selectedCategoryIndex = 0 }
+                isSelected = selectedCategoryId == null,
+                onClick = { onCategorySelected(null) }
             )
         }
         
         items(categories.size) { index ->
             CategoryChip(
                 name = categories[index].name,
-                isSelected = selectedCategoryIndex == index + 1,
-                onClick = { selectedCategoryIndex = index + 1 }
+                isSelected = selectedCategoryId == categories[index].id,
+                onClick = { onCategorySelected(categories[index].id) }
             )
         }
     }
@@ -621,7 +653,10 @@ fun HomeScreenPreview() {
                 userProfileUrl = null,
                 featuredEvents = getSampleEvents(),
                 nearbyEvents = getSampleEvents(),
-                categories = getSampleCategories()
+                categories = getSampleCategories(),
+                onEventClick = {},
+                onCategorySelected = {},
+                selectedCategoryId = null
             )
         }
     }

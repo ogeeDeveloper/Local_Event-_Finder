@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ogeedeveloper.local_event_finder_frontend.data.location.LocationService
+import com.ogeedeveloper.local_event_finder_frontend.data.upload.ImageUploadService
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,7 +59,8 @@ data class CreateEventUiState(
 @HiltViewModel
 class CreateEventViewModel @Inject constructor(
     private val eventRepository: EventRepository,
-    private val locationService: LocationService
+    private val locationService: LocationService,
+    private val imageUploadService: ImageUploadService
 ) : ViewModel() {
 
     var uiState by mutableStateOf(CreateEventUiState())
@@ -310,8 +312,25 @@ class CreateEventViewModel @Inject constructor(
                     // Convert capacity to int, null if blank (unlimited)
                     val capacity = if (uiState.capacity.isBlank()) null else uiState.capacity.toIntOrNull()
                     
-                    // Get image URL (in a real app, you would upload the image first and get a URL)
-                    val imageUrl = uiState.imageUri?.toString() ?: ""
+                    // Upload the image if available
+                    var imageUrl = ""
+                    if (uiState.imageUri != null) {
+                        // Show uploading status
+                        uiState = uiState.copy(errorMessage = "Uploading image...")
+                        
+                        // Upload the image and get the URL
+                        val uploadedUrl = imageUploadService.uploadImage(uiState.imageUri!!)
+                        
+                        if (uploadedUrl != null) {
+                            imageUrl = uploadedUrl
+                        } else {
+                            uiState = uiState.copy(
+                                isLoading = false,
+                                errorMessage = "Failed to upload image. Please try again."
+                            )
+                            return@launch
+                        }
+                    }
                     
                     // Format date and time
                     val dateTime = formatDateTime()
@@ -348,7 +367,7 @@ class CreateEventViewModel @Inject constructor(
                         dateTime = dateTime,
                         endTime = endTime,
                         price = price,
-                        coverImage = imageUrl,
+                        coverImage = imageUrl, // Use the uploaded image URL
                         totalSeats = capacity
                     )
                     
@@ -356,22 +375,22 @@ class CreateEventViewModel @Inject constructor(
                         onSuccess = { eventId ->
                             uiState = uiState.copy(
                                 isLoading = false,
-                                errorMessage = null,
                                 isEventCreated = true,
-                                createdEventId = eventId
+                                createdEventId = eventId,
+                                errorMessage = null
                             )
                         },
                         onFailure = { error ->
                             uiState = uiState.copy(
                                 isLoading = false,
-                                errorMessage = "Failed to create event: ${error.message}"
+                                errorMessage = error.message ?: "Failed to create event"
                             )
                         }
                     )
                 } catch (e: Exception) {
                     uiState = uiState.copy(
                         isLoading = false,
-                        errorMessage = "An error occurred: ${e.message}"
+                        errorMessage = e.message ?: "An unexpected error occurred"
                     )
                 }
             }

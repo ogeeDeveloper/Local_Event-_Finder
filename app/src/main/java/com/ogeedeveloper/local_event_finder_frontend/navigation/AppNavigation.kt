@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.login.LoginScreen
 import com.ogeedeveloper.local_event_finder_frontend.ui.screens.auth.signup.CreateAccountScreen
@@ -377,7 +378,8 @@ fun AppNavHost(
                     onNavigateToSearch = { navigationActions.navigateToSearch() },
                     onNavigateToEvents = { navigationActions.navigateToEvents() },
                     onNavigateToProfile = { navigationActions.navigateToProfile() },
-                    onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() }
+                    onNavigateToCreateEvent = { navigationActions.navigateToCreateEvent() },
+                    onNavigateToEventDetails = { eventId -> navigationActions.navigateToEventDetails(eventId) }
                 )
             }
 

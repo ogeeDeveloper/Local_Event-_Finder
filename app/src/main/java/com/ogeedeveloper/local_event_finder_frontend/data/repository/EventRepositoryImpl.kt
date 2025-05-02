@@ -180,4 +180,19 @@ class EventRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    /**
+     * Get all events from the API
+     */
+    override suspend fun getEvents(): Flow<List<Event>> {
+        return flow {
+            try {
+                val events = eventApi.getEvents()
+                emit(events)
+            } catch (e: Exception) {
+                Log.e("EventRepository", "Error fetching all events: ${e.message}")
+                throw e
+            }
+        }
+    }
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -44,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -83,44 +85,14 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
-    val bottomNavItems = remember {
-        listOf(
-            BottomNavItem(
-                title = "Home",
-                selectedIcon = Icons.Filled.Home,
-                unselectedIcon = Icons.Outlined.Home
-            ),
-            BottomNavItem(
-                title = "Explore",
-                selectedIcon = Icons.Filled.Search,
-                unselectedIcon = Icons.Outlined.Search
-            ),
-            BottomNavItem(
-                title = "Create",
-                selectedIcon = Icons.Filled.Add,
-                unselectedIcon = Icons.Outlined.Add
-            ),
-            BottomNavItem(
-                title = "Bookings",
-                selectedIcon = Icons.Filled.Event,
-                unselectedIcon = Icons.Outlined.Event
-            ),
-            BottomNavItem(
-                title = "Profile",
-                selectedIcon = Icons.Filled.Person,
-                unselectedIcon = Icons.Outlined.Person
-            )
-        )
-    }
-
-    var selectedTabIndex by remember { mutableIntStateOf(1) } // Search tab selected by default
-
+    val uiState by viewModel.uiState.collectAsState()
+    
     Scaffold(
+        modifier = modifier.fillMaxSize(),
         bottomBar = {
             BottomNavBar(
-                currentTab = selectedTabIndex,
+                currentTab = 1,
                 onTabSelected = { index ->
-                    selectedTabIndex = index
                     when (index) {
                         0 -> onNavigateToHome()
                         1 -> {} // Already on Search
@@ -129,26 +101,86 @@ fun SearchScreen(
                         4 -> onNavigateToProfile()
                     }
                 },
-                items = bottomNavItems
+                items = listOf(
+                    BottomNavItem(
+                        title = "Home",
+                        selectedIcon = Icons.Filled.Home,
+                        unselectedIcon = Icons.Outlined.Home
+                    ),
+                    BottomNavItem(
+                        title = "Explore",
+                        selectedIcon = Icons.Filled.Search,
+                        unselectedIcon = Icons.Outlined.Search
+                    ),
+                    BottomNavItem(
+                        title = "Create",
+                        selectedIcon = Icons.Filled.Add,
+                        unselectedIcon = Icons.Outlined.Add
+                    ),
+                    BottomNavItem(
+                        title = "Bookings",
+                        selectedIcon = Icons.Filled.Event,
+                        unselectedIcon = Icons.Outlined.Event
+                    ),
+                    BottomNavItem(
+                        title = "Profile",
+                        selectedIcon = Icons.Filled.Person,
+                        unselectedIcon = Icons.Outlined.Person
+                    )
+                )
             )
         }
     ) { paddingValues ->
-        SearchContent(
-            location = "Kingston, Jamaica",
-            categories = getSampleCategories(),
-            events = getSampleEvents(),
-            onOpenFilter = onOpenFilter,
-            onEventClick = onNavigateToEventDetails,
-            modifier = modifier.padding(paddingValues)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Show loading indicator when loading
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else if (uiState.errorMessage != null && uiState.filteredEvents.isEmpty()) {
+                // Show error state if there's an error and no events
+                EmptyState(
+                    title = "Oops!",
+                    message = uiState.errorMessage ?: "Something went wrong",
+                    imageResId = R.drawable.ic_empty_events,
+                    actionLabel = "Try Again",
+                    onActionClick = { viewModel.refreshData() }
+                )
+            } else {
+                // Show content when data is available
+                SearchContent(
+                    searchQuery = uiState.searchQuery,
+                    onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+                    location = uiState.location,
+                    onLocationChange = { viewModel.updateLocation(it) },
+                    categories = uiState.categories,
+                    selectedCategoryId = uiState.selectedCategoryId,
+                    onCategorySelected = { viewModel.selectCategory(it) },
+                    events = uiState.filteredEvents,
+                    onOpenFilter = onOpenFilter,
+                    onEventClick = onNavigateToEventDetails,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchContent(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     location: String,
+    onLocationChange: (String) -> Unit,
     categories: List<Category>,
+    selectedCategoryId: Int?,
+    onCategorySelected: (Int?) -> Unit,
     events: List<Event>,
     onOpenFilter: () -> Unit,
     onEventClick: (String) -> Unit,
@@ -164,7 +196,8 @@ fun SearchContent(
         // Location selector
         LocationSelector(
             location = location,
-            onLocationClick = { /* Navigate to location selection */ }
+            onLocationClick = { onLocationChange("Kingston, Jamaica") },
+            modifier = Modifier.clickable(onClick = { onLocationChange("Kingston, Jamaica") })
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -175,8 +208,8 @@ fun SearchContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             TextField(
-                value = "",
-                onValueChange = { /* Update search query */ },
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search your event here") },
                 leadingIcon = { 
@@ -223,8 +256,9 @@ fun SearchContent(
         // Category filters
         CategoryFilters(
             categories = categories,
-            selectedCategoryIndex = 0,
-            onCategorySelected = { /* Update selected category */ }
+            selectedCategoryIndex = selectedCategoryId,
+            onCategorySelected = onCategorySelected,
+            modifier = Modifier.fillMaxWidth()
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -287,19 +321,19 @@ fun LocationSelector(
 @Composable
 fun CategoryFilters(
     categories: List<Category>,
-    selectedCategoryIndex: Int,
-    onCategorySelected: (Int) -> Unit,
+    selectedCategoryIndex: Int?,
+    onCategorySelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
     ) {
         item {
             CategoryChip(
                 name = "All",
-                isSelected = selectedCategoryIndex == 0,
-                onClick = { onCategorySelected(0) }
+                isSelected = selectedCategoryIndex == null,
+                onClick = { onCategorySelected(null) }
             )
         }
         
@@ -540,17 +574,79 @@ private fun getSampleCategories(): List<Category> {
     )
 }
 
+@Composable
+fun EmptyState(
+    title: String,
+    message: String,
+    imageResId: Int,
+    actionLabel: String,
+    onActionClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            painter = painterResource(id = imageResId),
+            contentDescription = "Empty state image",
+            modifier = Modifier.size(100.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable(onClick = onActionClick)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = actionLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun SearchScreenPreview() {
     LocaleventfinderfrontendTheme {
         Surface {
             SearchContent(
+                searchQuery = "",
+                onSearchQueryChange = {},
                 location = "Kingston, Jamaica",
+                onLocationChange = {},
                 categories = getSampleCategories(),
+                selectedCategoryId = null,
+                onCategorySelected = {},
                 events = getSampleEvents(),
                 onOpenFilter = {},
-                onEventClick = {}
+                onEventClick = {},
+                modifier = Modifier.fillMaxSize()
             )
         }
     }

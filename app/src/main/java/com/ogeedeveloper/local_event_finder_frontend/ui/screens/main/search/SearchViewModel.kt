@@ -44,17 +44,24 @@ class SearchViewModel @Inject constructor(
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     init {
-        loadSampleEvents() // In a real app, this would call a repository to fetch real events
+        loadEvents() // Now fetching real events
         loadCategories() // Fetch categories from the API
     }
 
     fun updateSearchQuery(query: String) {
         _uiState.update { currentState ->
-            currentState.copy(
-                searchQuery = query
-            )
+            currentState.copy(searchQuery = query)
         }
-        filterEvents()
+        
+        // If query is not empty, search for events
+        if (query.isNotEmpty()) {
+            searchEvents(query)
+        } else {
+            // If query is empty, reset to all events
+            _uiState.update { currentState ->
+                currentState.copy(filteredEvents = currentState.events)
+            }
+        }
     }
 
     fun updateLocation(location: String) {
@@ -68,20 +75,74 @@ class SearchViewModel @Inject constructor(
 
     fun selectCategory(categoryId: Int?) {
         _uiState.update { currentState ->
-            currentState.copy(
-                selectedCategoryId = categoryId
-            )
+            currentState.copy(selectedCategoryId = categoryId)
         }
-        filterEvents()
+        
+        // If a category is selected, filter events by category
+        if (categoryId != null) {
+            filterByCategory(categoryId)
+        } else {
+            // If no category is selected, reset to all events or current search results
+            if (_uiState.value.searchQuery.isNotEmpty()) {
+                searchEvents(_uiState.value.searchQuery)
+            } else {
+                _uiState.update { currentState ->
+                    currentState.copy(filteredEvents = currentState.events)
+                }
+                applyFilters()
+            }
+        }
     }
-
+    
+    private fun filterByCategory(categoryId: Int) {
+        _uiState.update { it.copy(isLoading = true) }
+        
+        viewModelScope.launch {
+            try {
+                // Get the category name from the selected ID
+                val categoryName = _uiState.value.categories.find { it.id == categoryId }?.name
+                
+                if (categoryName != null) {
+                    // Filter events by category
+                    eventRepository.getEventsByCategory(categoryName).collect { events ->
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                filteredEvents = events
+                            )
+                        }
+                        
+                        // Apply any other active filters
+                        applyFilters()
+                    }
+                } else {
+                    // If category name not found, reset to all events
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            filteredEvents = currentState.events
+                        )
+                    }
+                    applyFilters()
+                }
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message
+                    )
+                }
+            }
+        }
+    }
+    
     fun updatePriceRange(range: ClosedFloatingPointRange<Float>) {
         _uiState.update { currentState ->
             currentState.copy(
                 selectedPriceRange = range
             )
         }
-        filterEvents()
+        applyFilters()
     }
 
     fun updateDate(date: Date?) {
@@ -90,7 +151,7 @@ class SearchViewModel @Inject constructor(
                 selectedDate = date
             )
         }
-        filterEvents()
+        applyFilters()
     }
 
     fun resetFilters() {
@@ -101,10 +162,72 @@ class SearchViewModel @Inject constructor(
                 selectedDate = null
             )
         }
-        filterEvents()
+        applyFilters()
     }
 
-    private fun filterEvents() {
+    fun refreshData() {
+        loadEvents()
+        loadCategories()
+    }
+
+    private fun loadEvents() {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        
+        viewModelScope.launch {
+            try {
+                eventRepository.getEvents().collect { events ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            events = events,
+                            filteredEvents = events
+                        )
+                    }
+                    
+                    // Apply any active filters
+                    applyFilters()
+                }
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message,
+                        events = emptyList(),
+                        filteredEvents = emptyList()
+                    )
+                }
+            }
+        }
+    }
+    
+    private fun searchEvents(query: String) {
+        _uiState.update { it.copy(isLoading = true) }
+        
+        viewModelScope.launch {
+            try {
+                eventRepository.searchEvents(query).collect { events ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            filteredEvents = events
+                        )
+                    }
+                    
+                    // Apply any other active filters to the search results
+                    applyFilters()
+                }
+            } catch (e: Exception) {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = e.message
+                    )
+                }
+            }
+        }
+    }
+
+    private fun applyFilters() {
         viewModelScope.launch {
             val currentState = _uiState.value
             val allEvents = currentState.events
@@ -145,32 +268,9 @@ class SearchViewModel @Inject constructor(
                 cal1.get(java.util.Calendar.DAY_OF_MONTH) == cal2.get(java.util.Calendar.DAY_OF_MONTH)
     }
 
-    // Load sample events - this would be replaced with a repository call in a real app
-    private fun loadSampleEvents() {
-        _uiState.update { it.copy(isLoading = true) }
-        
-        // In a real app, this would be fetched from a repository
-        val sampleEvents = getSampleEvents()
-        
-        // Calculate price range based on events
-        val minPrice = sampleEvents.minOfOrNull { it.price }?.toFloat() ?: 0f
-        val maxPrice = sampleEvents.maxOfOrNull { it.price }?.toFloat() ?: 1000f
-        val priceRange = minPrice..maxPrice
-        
-        _uiState.update { 
-            it.copy(
-                isLoading = false,
-                events = sampleEvents,
-                filteredEvents = sampleEvents,
-                priceRange = priceRange,
-                selectedPriceRange = priceRange
-            )
-        }
-    }
-    
-    // Fetch categories from the API
+    // Load categories from the API
     private fun loadCategories() {
-        _uiState.update { it.copy(isCategoriesLoading = true, errorMessage = null) }
+        _uiState.update { it.copy(isCategoriesLoading = true) }
         
         viewModelScope.launch {
             try {
@@ -179,83 +279,30 @@ class SearchViewModel @Inject constructor(
                     onSuccess = { categories ->
                         _uiState.update { 
                             it.copy(
-                                isCategoriesLoading = false,
-                                categories = categories
+                                categories = categories,
+                                isCategoriesLoading = false
                             )
                         }
                     },
                     onFailure = { error ->
-                        // If API call fails, fall back to sample categories
                         _uiState.update { 
                             it.copy(
-                                isCategoriesLoading = false,
                                 errorMessage = error.message,
-                                categories = getSampleCategories()
+                                isCategoriesLoading = false,
+                                categories = emptyList()
                             )
                         }
                     }
                 )
             } catch (e: Exception) {
-                // Handle any unexpected errors
                 _uiState.update { 
                     it.copy(
-                        isCategoriesLoading = false,
                         errorMessage = e.message,
-                        categories = getSampleCategories()
+                        isCategoriesLoading = false,
+                        categories = emptyList()
                     )
                 }
             }
         }
-    }
-
-    private fun getSampleEvents(): List<Event> {
-        return listOf(
-            Event(
-                id = "1",
-                title = "Shawn Mendes The Virtual Tour in Germany 2021",
-                description = "Join Shawn Mendes for a virtual concert experience",
-                organizer = "Coldplay Ticket",
-                startDate = Date(),
-                endDate = Date(System.currentTimeMillis() + 2 * 60 * 60 * 1000), // 2 hours later
-                isOnline = true,
-                price = 100.0,
-                originalPrice = 150.0,
-                category = "Music"
-            ),
-            Event(
-                id = "2",
-                title = "Tech Conference 2025",
-                description = "Annual tech conference with industry leaders",
-                organizer = "TechCorp",
-                startDate = Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000), // Tomorrow
-                endDate = Date(System.currentTimeMillis() + 26 * 60 * 60 * 1000),
-                price = 50.0,
-                category = "Business"
-            ),
-            Event(
-                id = "3",
-                title = "Food Festival",
-                description = "Explore cuisines from around the world",
-                organizer = "FoodLovers",
-                startDate = Date(System.currentTimeMillis() + 3 * 24 * 60 * 60 * 1000), // 3 days later
-                endDate = Date(System.currentTimeMillis() + 4 * 24 * 60 * 60 * 1000),
-                price = 25.0,
-                category = "Food"
-            )
-        )
-    }
-
-    // Fallback sample categories if API fails
-    private fun getSampleCategories(): List<Category> {
-        return listOf(
-            Category(id = 1, name = "Business"),
-            Category(id = 2, name = "Festival"),
-            Category(id = 3, name = "Music"),
-            Category(id = 4, name = "Comedy"),
-            Category(id = 5, name = "Concert"),
-            Category(id = 6, name = "Workshop"),
-            Category(id = 7, name = "Conference"),
-            Category(id = 8, name = "Exhibition")
-        )
     }
 }

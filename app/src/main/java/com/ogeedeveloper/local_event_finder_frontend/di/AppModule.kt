@@ -25,6 +25,7 @@ import com.ogeedeveloper.local_event_finder_frontend.data.repository.EventReposi
 import com.ogeedeveloper.local_event_finder_frontend.data.repository.UserRepositoryImpl
 import com.ogeedeveloper.local_event_finder_frontend.data.storage.AuthLocalDataSource
 import com.ogeedeveloper.local_event_finder_frontend.data.storage.UserPreferences
+import com.ogeedeveloper.local_event_finder_frontend.data.upload.ImageUploadService
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Location
 import com.ogeedeveloper.local_event_finder_frontend.domain.repository.AuthRepository
@@ -222,5 +223,15 @@ object AppModule {
         @ApplicationContext context: Context
     ): LocationService {
         return LocationService(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageUploadService(
+        @ApplicationContext context: Context,
+        apiConfig: ApiConfig,
+        okHttpClient: OkHttpClient
+    ): ImageUploadService {
+        return ImageUploadService(context, apiConfig, okHttpClient)
     }
 }

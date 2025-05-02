@@ -22,6 +22,12 @@ interface UserRepository {
  * Interface for event operations
  */
 interface EventRepository {
+    /**
+     * Get all events
+     * @return Flow of events
+     */
+    suspend fun getEvents(): Flow<List<Event>>
+    
     suspend fun getEventsByCategory(category: String): Flow<List<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event>>
     suspend fun getEventsByLocation(lat: Double, lng: Double, radius: Int): Flow<List<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event>>
     suspend fun getEventDetails(eventId: String): Flow<com.ogeedeveloper.local_event_finder_frontend.domain.model.Event?>
