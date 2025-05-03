@@ -66,7 +66,6 @@ import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
-import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavItem
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.EmptyState
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
@@ -86,54 +85,51 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
-    val bottomNavItems = remember {
-        listOf(
-            BottomNavItem(
-                title = "Home",
-                selectedIcon = Icons.Filled.Home,
-                unselectedIcon = Icons.Outlined.Home
-            ),
-            BottomNavItem(
-                title = "Explore",
-                selectedIcon = Icons.Filled.Search,
-                unselectedIcon = Icons.Outlined.Search
-            ),
-            BottomNavItem(
-                title = "Create",
-                selectedIcon = Icons.Filled.Add,
-                unselectedIcon = Icons.Outlined.Add
-            ),
-            BottomNavItem(
-                title = "Bookings",
-                selectedIcon = Icons.Filled.Event,
-                unselectedIcon = Icons.Outlined.Event
-            ),
-            BottomNavItem(
-                title = "Profile",
-                selectedIcon = Icons.Filled.Person,
-                unselectedIcon = Icons.Outlined.Person
-            )
-        )
-    }
-    
-    var selectedTabIndex by remember { mutableIntStateOf(0) } // Home tab selected
-    
     Scaffold(
         bottomBar = {
-            BottomNavBar(
-                currentTab = selectedTabIndex,
-                onTabSelected = { index ->
-                    selectedTabIndex = index
-                    when (index) {
-                        0 -> {} // Already on Home
-                        1 -> onNavigateToSearch()
-                        2 -> onNavigateToCreateEvent()
-                        3 -> onNavigateToEvents()
-                        4 -> onNavigateToProfile()
-                    }
-                },
-                items = bottomNavItems
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                BottomNavItem(
+                    icon = Icons.Outlined.Home,
+                    selectedIcon = Icons.Filled.Home,
+                    label = "Home",
+                    selected = true,
+                    onClick = {}
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Search,
+                    selectedIcon = Icons.Filled.Search,
+                    label = "Explore",
+                    selected = false,
+                    onClick = onNavigateToSearch
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Add,
+                    selectedIcon = Icons.Filled.Add,
+                    label = "Create",
+                    selected = false,
+                    onClick = onNavigateToCreateEvent
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Event,
+                    selectedIcon = Icons.Filled.Event,
+                    label = "Events",
+                    selected = false,
+                    onClick = onNavigateToEvents
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Person,
+                    selectedIcon = Icons.Filled.Person,
+                    label = "Profile",
+                    selected = false,
+                    onClick = onNavigateToProfile
+                )
+            }
         },
         modifier = modifier.fillMaxSize()
     ) { paddingValues ->

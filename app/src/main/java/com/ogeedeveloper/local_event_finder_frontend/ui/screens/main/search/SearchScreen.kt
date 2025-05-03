@@ -66,7 +66,6 @@ import com.ogeedeveloper.local_event_finder_frontend.R
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Category
 import com.ogeedeveloper.local_event_finder_frontend.domain.model.Event
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.AppTextField
-import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavItem
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.SearchTextField
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
@@ -90,45 +89,49 @@ fun SearchScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            BottomNavBar(
-                currentTab = 1,
-                onTabSelected = { index ->
-                    when (index) {
-                        0 -> onNavigateToHome()
-                        1 -> {} // Already on Search
-                        2 -> onNavigateToCreateEvent()
-                        3 -> onNavigateToEvents()
-                        4 -> onNavigateToProfile()
-                    }
-                },
-                items = listOf(
-                    BottomNavItem(
-                        title = "Home",
-                        selectedIcon = Icons.Filled.Home,
-                        unselectedIcon = Icons.Outlined.Home
-                    ),
-                    BottomNavItem(
-                        title = "Explore",
-                        selectedIcon = Icons.Filled.Search,
-                        unselectedIcon = Icons.Outlined.Search
-                    ),
-                    BottomNavItem(
-                        title = "Create",
-                        selectedIcon = Icons.Filled.Add,
-                        unselectedIcon = Icons.Outlined.Add
-                    ),
-                    BottomNavItem(
-                        title = "Bookings",
-                        selectedIcon = Icons.Filled.Event,
-                        unselectedIcon = Icons.Outlined.Event
-                    ),
-                    BottomNavItem(
-                        title = "Profile",
-                        selectedIcon = Icons.Filled.Person,
-                        unselectedIcon = Icons.Outlined.Person
-                    )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                BottomNavItem(
+                    icon = Icons.Outlined.Home,
+                    selectedIcon = Icons.Filled.Home,
+                    label = "Home",
+                    selected = false,
+                    onClick = onNavigateToHome
                 )
-            )
+                BottomNavItem(
+                    icon = Icons.Outlined.Search,
+                    selectedIcon = Icons.Filled.Search,
+                    label = "Explore",
+                    selected = true,
+                    onClick = {}
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Add,
+                    selectedIcon = Icons.Filled.Add,
+                    label = "Create",
+                    selected = false,
+                    onClick = onNavigateToCreateEvent
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Event,
+                    selectedIcon = Icons.Filled.Event,
+                    label = "Events",
+                    selected = false,
+                    onClick = onNavigateToEvents
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Person,
+                    selectedIcon = Icons.Filled.Person,
+                    label = "Profile",
+                    selected = false,
+                    onClick = onNavigateToProfile
+                )
+            }
         }
     ) { paddingValues ->
         Box(

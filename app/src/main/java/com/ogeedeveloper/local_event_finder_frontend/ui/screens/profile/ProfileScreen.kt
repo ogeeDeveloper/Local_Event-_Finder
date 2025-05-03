@@ -18,12 +18,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
@@ -58,7 +60,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.ogeedeveloper.local_event_finder_frontend.R
-import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavBar
 import com.ogeedeveloper.local_event_finder_frontend.ui.components.BottomNavItem
 import com.ogeedeveloper.local_event_finder_frontend.ui.theme.LocaleventfinderfrontendTheme
 
@@ -76,55 +77,54 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val bottomNavItems = remember {
-        listOf(
-            BottomNavItem(
-                title = "Home",
-                selectedIcon = Icons.Filled.Home,
-                unselectedIcon = Icons.Outlined.Home
-            ),
-            BottomNavItem(
-                title = "Explore",
-                selectedIcon = Icons.Filled.Search,
-                unselectedIcon = Icons.Outlined.Search
-            ),
-            BottomNavItem(
-                title = "Create",
-                selectedIcon = Icons.Filled.Add,
-                unselectedIcon = Icons.Outlined.Add
-            ),
-            BottomNavItem(
-                title = "Bookings",
-                selectedIcon = Icons.Filled.Person,
-                unselectedIcon = Icons.Outlined.Person
-            ),
-            BottomNavItem(
-                title = "Profile",
-                selectedIcon = Icons.Filled.Person,
-                unselectedIcon = Icons.Outlined.Person
-            )
-        )
-    }
-
     var selectedTabIndex by remember { mutableIntStateOf(4) } // Profile tab selected by default
     var darkModeEnabled by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
-            BottomNavBar(
-                currentTab = selectedTabIndex,
-                onTabSelected = { index ->
-                    selectedTabIndex = index
-                    when (index) {
-                        0 -> onNavigateToHome()
-                        1 -> onNavigateToSearch()
-                        2 -> onNavigateToCreateEvent()
-                        3 -> onNavigateToEvents()
-                        4 -> {} // Already on Profile
-                    }
-                },
-                items = bottomNavItems
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                BottomNavItem(
+                    icon = Icons.Outlined.Home,
+                    selectedIcon = Icons.Filled.Home,
+                    label = "Home",
+                    selected = false,
+                    onClick = onNavigateToHome
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Search,
+                    selectedIcon = Icons.Filled.Search,
+                    label = "Explore",
+                    selected = false,
+                    onClick = onNavigateToSearch
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Add,
+                    selectedIcon = Icons.Filled.Add,
+                    label = "Create",
+                    selected = false,
+                    onClick = onNavigateToCreateEvent
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Event,
+                    selectedIcon = Icons.Filled.Event,
+                    label = "Events",
+                    selected = false,
+                    onClick = onNavigateToEvents
+                )
+                BottomNavItem(
+                    icon = Icons.Outlined.Person,
+                    selectedIcon = Icons.Filled.Person,
+                    label = "Profile",
+                    selected = true,
+                    onClick = {}
+                )
+            }
         }
     ) { paddingValues ->
         Column(
