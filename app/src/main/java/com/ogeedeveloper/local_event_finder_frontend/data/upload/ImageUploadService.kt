@@ -50,7 +50,7 @@ class ImageUploadService @Inject constructor(
                 
             // Build the request
             val request = Request.Builder()
-                .url("${apiConfig.getBaseUrl()}api/upload")
+                .url("${apiConfig.getBaseUrl()}upload")
                 .post(body)
                 .build()
                 

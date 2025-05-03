@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -78,8 +80,7 @@ fun PaymentMethodScreen(
     modifier: Modifier = Modifier,
     viewModel: BookingViewModel = hiltViewModel()
 ) {
-    // In a real app, this would come from the ViewModel
-    val event = getSampleEvent(eventId)
+    val uiState by viewModel.uiState.collectAsState()
     var quantity by remember { mutableIntStateOf(1) }
     var selectedPaymentMethod by remember { mutableStateOf("Paypal") }
     
@@ -89,12 +90,50 @@ fun PaymentMethodScreen(
         PaymentMethod("Apple Card", R.drawable.ic_apple)
     )
     
+    // Show loading state if event is still loading
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+    
+    // Show error state if there's an error
+    if (uiState.error != null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Error: ${uiState.error}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onBackClick) {
+                    Text("Go Back")
+                }
+            }
+        }
+        return
+    }
+    
+    // Get event from state
+    val event = uiState.event ?: return
+    
     val ticketPrice = event.price
     val discount = if (quantity > 1) 20.0 else 0.0
     val subtotal = (ticketPrice * quantity) - discount
     
     val formatter = NumberFormat.getCurrencyInstance().apply {
-        currency = Currency.getInstance(event.currency)
+        currency = Currency.getInstance(event.currency ?: "USD")
     }
     
     val isFreeEvent = event.price <= 0
@@ -551,30 +590,6 @@ data class PaymentMethod(
 private fun formatDate(date: Date): String {
     val formatter = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault())
     return formatter.format(date)
-}
-
-// Sample data for preview
-private fun getSampleEvent(eventId: String): Event {
-    return Event(
-        id = eventId,
-        title = "Coldplay Ticket",
-        description = "Coldplay are a British rock band formed in London in 1996.",
-        organizer = "Cold Play",
-        organizerLogoUrl = "https://i.imgur.com/6Woi0Bf.jpg",
-        startDate = Date(),
-        endDate = Date(System.currentTimeMillis() + 3600000), // 1 hour later
-        location = com.ogeedeveloper.local_event_finder_frontend.domain.model.Location(
-            id = "1",
-            name = "Wembley Stadium",
-            address = "London, UK",
-            latitude = 51.556,
-            longitude = -0.279
-        ),
-        imageUrl = "https://i.imgur.com/6Woi0Bf.jpg",
-        price = 100.0,
-        currency = "USD",
-        category = "Status"
-    )
 }
 
 @Preview(showBackground = true)
